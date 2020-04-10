@@ -1,37 +1,33 @@
+import {Count, CountSchema, Filter, repository, Where,} from '@loopback/repository';
 import {
-  Count,
-  CountSchema,
-  Filter,
-  repository,
-  Where,
-} from '@loopback/repository';
-import {
-  post,
-  param,
+  del,
   get,
   getFilterSchemaFor,
   getModelSchemaRef,
   getWhereSchemaFor,
+  HttpErrors,
+  param,
   patch,
+  post,
   put,
-  del,
   requestBody,
 } from '@loopback/rest';
+
 import {Patient} from '../models';
 import {PatientRepository} from '../repositories';
-import {Guid} from "guid-typescript";
+import {BluetoothUuidGenerator} from "../common/utils/bluetooth-uuid-generator";
 
 export class PatientController {
   constructor(
     @repository(PatientRepository)
-    public patientRepository : PatientRepository,
-  ) {}
+    public patientRepository: PatientRepository,
+  ) { }
 
   @post('/patients', {
     responses: {
       '200': {
         description: 'Patient model instance',
-        content: {'application/json': {schema: getModelSchemaRef(Patient)}},
+        content: { 'application/json': { schema: getModelSchemaRef(Patient) } },
       },
     },
   })
@@ -47,20 +43,37 @@ export class PatientController {
       },
     })
     patient: Omit<Patient, 'id'>,
-  ): Promise<Patient> {
+  ): Promise<Patient | null> {
 
-    //generate an unique uuid for each patient
-    patient.serviceAdvertisementUUID = Guid.create();
-    patient.created = new Date();
+    let returnValue: Promise<Patient | null> = new Promise(resolve => {
 
-    return this.patientRepository.create(patient);
+      this.patientRepository.count({documentNumber: {eq: patient.documentNumber}}).then(result => {
+        //create the new patient just in case there is no other with same NIF within database
+        if (result.count == 0) {
+          //generate an unique uuid for each patient
+          patient.serviceAdvertisementUUID = BluetoothUuidGenerator.generateUUID();
+          patient.created = new Date();
+
+          this.patientRepository.create(patient).then(createdPatient => {
+            resolve(createdPatient);
+          })
+        }
+        else {
+          resolve(null);
+        }
+
+      })
+    });
+
+    return returnValue;
+
   }
 
   @get('/patients/count', {
     responses: {
       '200': {
         description: 'Patient model count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -78,7 +91,7 @@ export class PatientController {
           'application/json': {
             schema: {
               type: 'array',
-              items: getModelSchemaRef(Patient, {includeRelations: true}),
+              items: getModelSchemaRef(Patient, { includeRelations: true }),
             },
           },
         },
@@ -95,7 +108,7 @@ export class PatientController {
     responses: {
       '200': {
         description: 'Patient PATCH success count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -103,7 +116,7 @@ export class PatientController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Patient, {partial: true}),
+          schema: getModelSchemaRef(Patient, { partial: true }),
         },
       },
     })
@@ -113,13 +126,35 @@ export class PatientController {
     return this.patientRepository.updateAll(patient, where);
   }
 
+  @get('/patients/scan/{qrcode}', {
+    responses: {
+      '200': {
+        description: 'Get patient by qr-code scan',
+      },
+      '404': {
+        description: 'Patient not found',
+      }
+    },
+  })
+  async getByQrCode(
+    @param.path.string('qrcode') qrcode: string,
+  ): Promise<Patient> {
+    return await this.patientRepository.findById(qrcode).then(patient => {
+      if (patient != null) {
+        return patient;
+      } else {
+        throw new HttpErrors[404];
+      }
+    });
+  }
+
   @get('/patients/{id}', {
     responses: {
       '200': {
         description: 'Patient model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(Patient, {includeRelations: true}),
+            schema: getModelSchemaRef(Patient, { includeRelations: true }),
           },
         },
       },
@@ -129,7 +164,17 @@ export class PatientController {
     @param.path.string('id') id: string,
     @param.query.object('filter', getFilterSchemaFor(Patient)) filter?: Filter<Patient>
   ): Promise<Patient> {
-    return this.patientRepository.findById(id, filter);
+
+    let returnValue: Promise<Patient> = new Promise(resolve => {
+      this.patientRepository.findById(id, filter).then(patient => {
+        if(patient.serviceAdvertisementUUID == null) {
+          patient.serviceAdvertisementUUID = BluetoothUuidGenerator.generateUUID();
+        }
+        resolve(patient);
+      })
+    });
+
+    return returnValue;
   }
 
   @patch('/patients/{id}', {
@@ -144,7 +189,7 @@ export class PatientController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Patient, {partial: true}),
+          schema: getModelSchemaRef(Patient, { partial: true }),
         },
       },
     })
@@ -161,14 +206,60 @@ export class PatientController {
     },
   })
   async updateStatus(
-      @param.path.string('id') id: string,
-      @requestBody() status: number,
+    @param.path.string('id') id: string,
+    @requestBody() status: number,
   ): Promise<void> {
 
     await this.patientRepository.findById(id).then(patient => {
-      if(patient != null) {
+      if (patient != null) {
         patient.status = status;
         this.patientRepository.replaceById(id, patient);
+      }
+    });
+
+  }
+
+  @put('/patients/status', {
+    responses: {
+      '200': {
+        description: 'Update patient status success',
+      },
+      '404': {
+        description: 'Patient not found',
+      }
+    },
+  })
+  async updateStatusByDocumentNumber(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              documentNumber: { type: 'string' },
+              status: { type: 'number' }
+            },
+            required: ['documentNumber', 'status']
+          }
+        }
+      },
+    })
+    body: any,
+  ): Promise<Patient | null> {
+    let filter = {
+      "where": {
+        "documentNumber": body.documentNumber
+      }
+    };
+
+    return await this.patientRepository.findOne(filter).then(patient => {
+      if (patient != null) {
+        patient.status = body.status;
+        this.patientRepository.update(patient);
+        return patient;
+      } else {
+        throw new HttpErrors[404];
       }
     });
 

@@ -1,12 +1,13 @@
-import {Entity, model, property} from '@loopback/repository';
 
-@model({settings: {strict: false}})
+import {Entity, model, property, hasMany} from '@loopback/repository';
+import {LeaveRequest} from './leave-request.model';
+
+@model({ settings: { strict: false } })
 export class Patient extends Entity {
-
   @property({
     type: 'string',
     id: true,
-    generated: true
+    generated: true,
   })
   id: string;
 
@@ -79,8 +80,9 @@ export class Patient extends Entity {
   @property({
     type: 'number',
     required: false,
+    default: 1
   })
-  status?: number = 1;
+  status?: number;
 
   @property({
     type: 'string',
@@ -105,6 +107,9 @@ export class Patient extends Entity {
     required: false,
   })
   updated?: Date;
+
+  @hasMany(() => LeaveRequest)
+  leaveRequests: LeaveRequest[];
 
   // Define well-known properties here
 

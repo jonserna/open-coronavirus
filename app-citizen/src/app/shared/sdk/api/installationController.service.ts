@@ -17,8 +17,8 @@ import { HttpClient, HttpHeaders, HttpParams,
 import { CustomHttpParameterCodec }                          from '../encoder';
 import { Observable }                                        from 'rxjs';
 
-import { BluetoothLeAdvertisement } from '../model/bluetoothLeAdvertisement';
-import { BluetoothLeAdvertisementWithRelations } from '../model/bluetoothLeAdvertisementWithRelations';
+import { Installation } from '../model/installation';
+import { InstallationWithRelations } from '../model/installationWithRelations';
 import { LoopbackCount } from '../model/loopbackCount';
 
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
@@ -29,7 +29,7 @@ import { Configuration }                                     from '../configurat
 @Injectable({
   providedIn: 'root'
 })
-export class BluetoothLeAdvertisementControllerService {
+export class InstallationControllerService {
 
     protected basePath = 'http://localhost:3000';
     public defaultHeaders = new HttpHeaders();
@@ -56,10 +56,10 @@ export class BluetoothLeAdvertisementControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public bluetoothLeAdvertisementControllerCount(where?: { [key: string]: object; }, observe?: 'body', reportProgress?: boolean): Observable<LoopbackCount>;
-    public bluetoothLeAdvertisementControllerCount(where?: { [key: string]: object; }, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<LoopbackCount>>;
-    public bluetoothLeAdvertisementControllerCount(where?: { [key: string]: object; }, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<LoopbackCount>>;
-    public bluetoothLeAdvertisementControllerCount(where?: { [key: string]: object; }, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public installationControllerCount(where?: { [key: string]: object; }, observe?: 'body', reportProgress?: boolean): Observable<LoopbackCount>;
+    public installationControllerCount(where?: { [key: string]: object; }, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<LoopbackCount>>;
+    public installationControllerCount(where?: { [key: string]: object; }, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<LoopbackCount>>;
+    public installationControllerCount(where?: { [key: string]: object; }, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
 
         let queryParameters = new HttpParams({encoder: this.encoder});
         if (where !== undefined && where !== null) {
@@ -78,7 +78,7 @@ export class BluetoothLeAdvertisementControllerService {
         }
 
 
-        return this.httpClient.get<LoopbackCount>(`${this.configuration.basePath}/bluetooth-le-advertisements/count`,
+        return this.httpClient.get<LoopbackCount>(`${this.configuration.basePath}/installations/count`,
             {
                 params: queryParameters,
                 withCredentials: this.configuration.withCredentials,
@@ -94,10 +94,10 @@ export class BluetoothLeAdvertisementControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public bluetoothLeAdvertisementControllerCreate(requestBody?: { [key: string]: object; }, observe?: 'body', reportProgress?: boolean): Observable<BluetoothLeAdvertisement>;
-    public bluetoothLeAdvertisementControllerCreate(requestBody?: { [key: string]: object; }, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<BluetoothLeAdvertisement>>;
-    public bluetoothLeAdvertisementControllerCreate(requestBody?: { [key: string]: object; }, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<BluetoothLeAdvertisement>>;
-    public bluetoothLeAdvertisementControllerCreate(requestBody?: { [key: string]: object; }, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public installationControllerCreate(requestBody?: { [key: string]: object; }, observe?: 'body', reportProgress?: boolean): Observable<Installation>;
+    public installationControllerCreate(requestBody?: { [key: string]: object; }, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<Installation>>;
+    public installationControllerCreate(requestBody?: { [key: string]: object; }, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<Installation>>;
+    public installationControllerCreate(requestBody?: { [key: string]: object; }, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
 
         let headers = this.defaultHeaders;
 
@@ -120,7 +120,7 @@ export class BluetoothLeAdvertisementControllerService {
             headers = headers.set('Content-Type', httpContentTypeSelected);
         }
 
-        return this.httpClient.post<BluetoothLeAdvertisement>(`${this.configuration.basePath}/bluetooth-le-advertisements`,
+        return this.httpClient.post<Installation>(`${this.configuration.basePath}/installations`,
             requestBody,
             {
                 withCredentials: this.configuration.withCredentials,
@@ -136,12 +136,12 @@ export class BluetoothLeAdvertisementControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public bluetoothLeAdvertisementControllerDeleteById(id: string, observe?: 'body', reportProgress?: boolean): Observable<any>;
-    public bluetoothLeAdvertisementControllerDeleteById(id: string, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
-    public bluetoothLeAdvertisementControllerDeleteById(id: string, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
-    public bluetoothLeAdvertisementControllerDeleteById(id: string, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public installationControllerDeleteById(id: string, observe?: 'body', reportProgress?: boolean): Observable<any>;
+    public installationControllerDeleteById(id: string, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
+    public installationControllerDeleteById(id: string, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
+    public installationControllerDeleteById(id: string, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
         if (id === null || id === undefined) {
-            throw new Error('Required parameter id was null or undefined when calling bluetoothLeAdvertisementControllerDeleteById.');
+            throw new Error('Required parameter id was null or undefined when calling installationControllerDeleteById.');
         }
 
         let headers = this.defaultHeaders;
@@ -155,7 +155,7 @@ export class BluetoothLeAdvertisementControllerService {
         }
 
 
-        return this.httpClient.delete<any>(`${this.configuration.basePath}/bluetooth-le-advertisements/${encodeURIComponent(String(id))}`,
+        return this.httpClient.delete<any>(`${this.configuration.basePath}/installations/${encodeURIComponent(String(id))}`,
             {
                 withCredentials: this.configuration.withCredentials,
                 headers: headers,
@@ -170,10 +170,10 @@ export class BluetoothLeAdvertisementControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public bluetoothLeAdvertisementControllerFind(filter?: object, observe?: 'body', reportProgress?: boolean): Observable<Array<BluetoothLeAdvertisementWithRelations>>;
-    public bluetoothLeAdvertisementControllerFind(filter?: object, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<Array<BluetoothLeAdvertisementWithRelations>>>;
-    public bluetoothLeAdvertisementControllerFind(filter?: object, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<Array<BluetoothLeAdvertisementWithRelations>>>;
-    public bluetoothLeAdvertisementControllerFind(filter?: object, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public installationControllerFind(filter?: object, observe?: 'body', reportProgress?: boolean): Observable<Array<InstallationWithRelations>>;
+    public installationControllerFind(filter?: object, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<Array<InstallationWithRelations>>>;
+    public installationControllerFind(filter?: object, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<Array<InstallationWithRelations>>>;
+    public installationControllerFind(filter?: object, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
 
         let queryParameters = new HttpParams({encoder: this.encoder});
         if (filter !== undefined && filter !== null) {
@@ -192,7 +192,7 @@ export class BluetoothLeAdvertisementControllerService {
         }
 
 
-        return this.httpClient.get<Array<BluetoothLeAdvertisementWithRelations>>(`${this.configuration.basePath}/bluetooth-le-advertisements`,
+        return this.httpClient.get<Array<InstallationWithRelations>>(`${this.configuration.basePath}/installations`,
             {
                 params: queryParameters,
                 withCredentials: this.configuration.withCredentials,
@@ -209,12 +209,12 @@ export class BluetoothLeAdvertisementControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public bluetoothLeAdvertisementControllerFindById(id: string, filter?: object, observe?: 'body', reportProgress?: boolean): Observable<BluetoothLeAdvertisementWithRelations>;
-    public bluetoothLeAdvertisementControllerFindById(id: string, filter?: object, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<BluetoothLeAdvertisementWithRelations>>;
-    public bluetoothLeAdvertisementControllerFindById(id: string, filter?: object, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<BluetoothLeAdvertisementWithRelations>>;
-    public bluetoothLeAdvertisementControllerFindById(id: string, filter?: object, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public installationControllerFindById(id: string, filter?: object, observe?: 'body', reportProgress?: boolean): Observable<InstallationWithRelations>;
+    public installationControllerFindById(id: string, filter?: object, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<InstallationWithRelations>>;
+    public installationControllerFindById(id: string, filter?: object, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<InstallationWithRelations>>;
+    public installationControllerFindById(id: string, filter?: object, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
         if (id === null || id === undefined) {
-            throw new Error('Required parameter id was null or undefined when calling bluetoothLeAdvertisementControllerFindById.');
+            throw new Error('Required parameter id was null or undefined when calling installationControllerFindById.');
         }
 
         let queryParameters = new HttpParams({encoder: this.encoder});
@@ -234,7 +234,7 @@ export class BluetoothLeAdvertisementControllerService {
         }
 
 
-        return this.httpClient.get<BluetoothLeAdvertisementWithRelations>(`${this.configuration.basePath}/bluetooth-le-advertisements/${encodeURIComponent(String(id))}`,
+        return this.httpClient.get<InstallationWithRelations>(`${this.configuration.basePath}/installations/${encodeURIComponent(String(id))}`,
             {
                 params: queryParameters,
                 withCredentials: this.configuration.withCredentials,
@@ -251,12 +251,12 @@ export class BluetoothLeAdvertisementControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public bluetoothLeAdvertisementControllerReplaceById(id: string, requestBody?: { [key: string]: object; }, observe?: 'body', reportProgress?: boolean): Observable<any>;
-    public bluetoothLeAdvertisementControllerReplaceById(id: string, requestBody?: { [key: string]: object; }, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
-    public bluetoothLeAdvertisementControllerReplaceById(id: string, requestBody?: { [key: string]: object; }, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
-    public bluetoothLeAdvertisementControllerReplaceById(id: string, requestBody?: { [key: string]: object; }, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public installationControllerReplaceById(id: string, requestBody?: { [key: string]: object; }, observe?: 'body', reportProgress?: boolean): Observable<any>;
+    public installationControllerReplaceById(id: string, requestBody?: { [key: string]: object; }, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
+    public installationControllerReplaceById(id: string, requestBody?: { [key: string]: object; }, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
+    public installationControllerReplaceById(id: string, requestBody?: { [key: string]: object; }, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
         if (id === null || id === undefined) {
-            throw new Error('Required parameter id was null or undefined when calling bluetoothLeAdvertisementControllerReplaceById.');
+            throw new Error('Required parameter id was null or undefined when calling installationControllerReplaceById.');
         }
 
         let headers = this.defaultHeaders;
@@ -279,7 +279,7 @@ export class BluetoothLeAdvertisementControllerService {
             headers = headers.set('Content-Type', httpContentTypeSelected);
         }
 
-        return this.httpClient.put<any>(`${this.configuration.basePath}/bluetooth-le-advertisements/${encodeURIComponent(String(id))}`,
+        return this.httpClient.put<any>(`${this.configuration.basePath}/installations/${encodeURIComponent(String(id))}`,
             requestBody,
             {
                 withCredentials: this.configuration.withCredentials,
@@ -296,10 +296,10 @@ export class BluetoothLeAdvertisementControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public bluetoothLeAdvertisementControllerUpdateAll(where?: { [key: string]: object; }, requestBody?: { [key: string]: object; }, observe?: 'body', reportProgress?: boolean): Observable<LoopbackCount>;
-    public bluetoothLeAdvertisementControllerUpdateAll(where?: { [key: string]: object; }, requestBody?: { [key: string]: object; }, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<LoopbackCount>>;
-    public bluetoothLeAdvertisementControllerUpdateAll(where?: { [key: string]: object; }, requestBody?: { [key: string]: object; }, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<LoopbackCount>>;
-    public bluetoothLeAdvertisementControllerUpdateAll(where?: { [key: string]: object; }, requestBody?: { [key: string]: object; }, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public installationControllerUpdateAll(where?: { [key: string]: object; }, requestBody?: { [key: string]: object; }, observe?: 'body', reportProgress?: boolean): Observable<LoopbackCount>;
+    public installationControllerUpdateAll(where?: { [key: string]: object; }, requestBody?: { [key: string]: object; }, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<LoopbackCount>>;
+    public installationControllerUpdateAll(where?: { [key: string]: object; }, requestBody?: { [key: string]: object; }, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<LoopbackCount>>;
+    public installationControllerUpdateAll(where?: { [key: string]: object; }, requestBody?: { [key: string]: object; }, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
 
         let queryParameters = new HttpParams({encoder: this.encoder});
         if (where !== undefined && where !== null) {
@@ -327,7 +327,7 @@ export class BluetoothLeAdvertisementControllerService {
             headers = headers.set('Content-Type', httpContentTypeSelected);
         }
 
-        return this.httpClient.patch<LoopbackCount>(`${this.configuration.basePath}/bluetooth-le-advertisements`,
+        return this.httpClient.patch<LoopbackCount>(`${this.configuration.basePath}/installations`,
             requestBody,
             {
                 params: queryParameters,
@@ -345,12 +345,12 @@ export class BluetoothLeAdvertisementControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public bluetoothLeAdvertisementControllerUpdateById(id: string, requestBody?: { [key: string]: object; }, observe?: 'body', reportProgress?: boolean): Observable<any>;
-    public bluetoothLeAdvertisementControllerUpdateById(id: string, requestBody?: { [key: string]: object; }, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
-    public bluetoothLeAdvertisementControllerUpdateById(id: string, requestBody?: { [key: string]: object; }, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
-    public bluetoothLeAdvertisementControllerUpdateById(id: string, requestBody?: { [key: string]: object; }, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
+    public installationControllerUpdateById(id: string, requestBody?: { [key: string]: object; }, observe?: 'body', reportProgress?: boolean): Observable<any>;
+    public installationControllerUpdateById(id: string, requestBody?: { [key: string]: object; }, observe?: 'response', reportProgress?: boolean): Observable<HttpResponse<any>>;
+    public installationControllerUpdateById(id: string, requestBody?: { [key: string]: object; }, observe?: 'events', reportProgress?: boolean): Observable<HttpEvent<any>>;
+    public installationControllerUpdateById(id: string, requestBody?: { [key: string]: object; }, observe: any = 'body', reportProgress: boolean = false ): Observable<any> {
         if (id === null || id === undefined) {
-            throw new Error('Required parameter id was null or undefined when calling bluetoothLeAdvertisementControllerUpdateById.');
+            throw new Error('Required parameter id was null or undefined when calling installationControllerUpdateById.');
         }
 
         let headers = this.defaultHeaders;
@@ -373,7 +373,7 @@ export class BluetoothLeAdvertisementControllerService {
             headers = headers.set('Content-Type', httpContentTypeSelected);
         }
 
-        return this.httpClient.patch<any>(`${this.configuration.basePath}/bluetooth-le-advertisements/${encodeURIComponent(String(id))}`,
+        return this.httpClient.patch<any>(`${this.configuration.basePath}/installations/${encodeURIComponent(String(id))}`,
             requestBody,
             {
                 withCredentials: this.configuration.withCredentials,

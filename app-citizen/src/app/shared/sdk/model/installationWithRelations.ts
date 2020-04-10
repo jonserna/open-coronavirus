@@ -14,14 +14,12 @@
 /**
  * (Schema options: { includeRelations: true })
  */
-export interface BluetoothLeAdvertisementWithRelations { 
+export interface InstallationWithRelations { 
   [key: string]: object | any;
 
 
     id?: string;
-    sourceServiceUUID: string;
-    targetServiceUUID: string;
-    created?: Date;
-    rssi?: number;
+    deviceId: string;
+    created: Date;
 }
 

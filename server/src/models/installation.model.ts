@@ -1,7 +1,7 @@
 import {Entity, model, property} from '@loopback/repository';
 
 @model({settings: {strict: false}})
-export class Document extends Entity {
+export class Installation extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -13,13 +13,7 @@ export class Document extends Entity {
     type: 'string',
     required: true,
   })
-  name: string;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
-  content: string;
+  deviceId: string;
 
   @property({
     type: 'date',
@@ -27,24 +21,19 @@ export class Document extends Entity {
   })
   created: string;
 
-  @property({
-    type: 'date',
-  })
-  updated?: string;
-
   // Define well-known properties here
 
   // Indexer property to allow additional data
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [prop: string]: any;
 
-  constructor(data?: Partial<Document>) {
+  constructor(data?: Partial<Installation>) {
     super(data);
   }
 }
 
-export interface DocumentRelations {
+export interface InstallationRelations {
   // describe navigational properties here
 }
 
-export type DocumentWithRelations = Document & DocumentRelations;
+export type InstallationWithRelations = Installation & InstallationRelations;

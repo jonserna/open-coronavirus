@@ -8,6 +8,7 @@ import {join} from 'path';
 import {MySequence} from './sequence';
 import {AppointmentMockService} from "./services/impl/appointment-mock.service";
 import {HealthCenterMockService} from "./services/impl/health-center-mock.service";
+import {PushNotificationService} from "./services/pushnotification.service";
 
 const fs = require('fs');
 const dotenv = require('dotenv');
@@ -54,6 +55,9 @@ export class CoronavirusServerApplication extends BootMixin(
       path: '/explorer',
     });
     this.component(RestExplorerComponent);
+
+    //General purpose services:
+    this.service(PushNotificationService);
 
     //Define custom services at this point:
     this.service(AppointmentMockService, {interface: 'AppointmentService'});

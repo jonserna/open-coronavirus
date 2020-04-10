@@ -12,16 +12,13 @@
 
 
 /**
- * (Schema options: { includeRelations: true })
+ * (Schema options: { title: \'NewInstallation\', exclude: [ \'id\' ] })
  */
-export interface BluetoothLeAdvertisementWithRelations { 
+export interface NewInstallation { 
   [key: string]: object | any;
 
 
-    id?: string;
-    sourceServiceUUID: string;
-    targetServiceUUID: string;
-    created?: Date;
-    rssi?: number;
+    deviceId: string;
+    created: Date;
 }
 

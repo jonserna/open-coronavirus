@@ -27,6 +27,7 @@ import {StorageService} from "./shared/services/storage.service";
 import {BlueToothTrackingService} from "./shared/services/tracking/bluetoothtracking.service";
 import {GeolocationtrackingService} from "./shared/services/tracking/geolocationtracking.service";
 import { BluetoothLE } from '@ionic-native/bluetooth-le/ngx';
+import {UniqueDeviceID} from "@ionic-native/unique-device-id/ngx";
 
 @NgModule({
     declarations: [AppComponent, MainComponent],
@@ -46,6 +47,7 @@ import { BluetoothLE } from '@ionic-native/bluetooth-le/ngx';
         PatientService,
         LeaveRequestService,
         StorageService,
+        UniqueDeviceID,
         NativeStorage,
         ShareService,
         BlueToothTrackingService,

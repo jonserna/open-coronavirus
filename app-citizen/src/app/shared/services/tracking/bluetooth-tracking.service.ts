@@ -49,6 +49,14 @@ export class BluetoothTrackingService {
 
         this.prepareBackgroundMode();
 
+        this.bluetoothle.getAdapterInfo().then(result => {
+            console.debug("[BluetoothLE] Device info: " + JSON.stringify(result));
+        });
+
+        this.btEnabled$.next(true);
+
+        /*
+
         if(this.settings.enabled.bluetooth && this.activated == false) {
             this.activated = true;
 
@@ -90,6 +98,8 @@ export class BluetoothTrackingService {
         } else {
             this.permissionsService.goToNextPermissionIfPermissionsRequested();
         }
+
+         */
 
         return this.btEnabled$;
 
@@ -142,12 +152,12 @@ export class BluetoothTrackingService {
                     uuid: this.patientServiceUUID,
                     permissions: {
                         read: true,
-                        write: false,
+                        write: true,
                     },
                     properties : {
                         read: true,
-                        writeWithoutResponse: false,
-                        write: false,
+                        writeWithoutResponse: true,
+                        write: true,
                         notify: true,
                         indicate: true
                     }
@@ -232,25 +242,28 @@ export class BluetoothTrackingService {
                     //avoid duplicate calls while processing an item (because this is a subscription callback from ble.scan method
                     console.debug('[BluetoothLE] connecting to ' + device.id + " ...");
                     this.ble.connect(device.id).subscribe(result => {
-                            console.debug('[BluetoothLE] connected result: ' + JSON.stringify(result));
-                            result.characteristics.forEach(characteristic => {
-                                if (characteristic.service.toUpperCase() == BluetoothTrackingService.serviceUUID) {
-                                    let targetCharacteristicUUID = characteristic.characteristic;
-                                    console.debug("**********************************************************************************************");
-                                    console.debug("    Open Coronavirus Target UUID detected: " + targetCharacteristicUUID + ", rssi: " + device.rssi);
-                                    console.debug("**********************************************************************************************");
-                                    //now save the device, with the address and so on into local storage
-                                    if (!this.addressesBeingTracked.has(device.id)) {
-                                        this.addressesBeingTracked.set(device.id, true);
-                                        this.contactTrackerService.trackContact(targetCharacteristicUUID, device.rssi, device.id);
-                                    }
+                        console.debug('[BluetoothLE] connected result: ' + JSON.stringify(result));
+
+
+
+                        result.characteristics.forEach(characteristic => {
+                            if (characteristic.service.toUpperCase() == BluetoothTrackingService.serviceUUID) {
+                                let targetCharacteristicUUID = characteristic.characteristic;
+                                console.debug("**********************************************************************************************");
+                                console.debug("    Open Coronavirus Target service detected: " + targetCharacteristicUUID + ", rssi: " + device.rssi);
+                                console.debug("**********************************************************************************************");
+                                //now save the device, with the address and so on into local storage
+                                if (!this.addressesBeingTracked.has(device.id)) {
+                                    this.addressesBeingTracked.set(device.id, true);
+                                    //this.contactTrackerService.trackContact(targetCharacteristicUUID, device.rssi, device.id);
                                 }
-                            });
-                            this.ble.disconnect(device.id); //disconnect from the device!!! so important
-                        },
-                        peripheralData => {
-                            console.error('[BluetoothLE] error connecting: ' + JSON.stringify(peripheralData));
+                            }
                         });
+                        this.ble.disconnect(device.id); //disconnect from the device!!! so important
+                    },
+                    peripheralData => {
+                        console.error('[BluetoothLE] error connecting: ' + JSON.stringify(peripheralData));
+                    });
                 } else {
                     this.contactTrackerService.updateTrack(device.id, device.rssi);
                 }

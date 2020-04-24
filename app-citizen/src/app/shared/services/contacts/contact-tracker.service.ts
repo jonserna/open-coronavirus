@@ -59,7 +59,7 @@ export class ContactTrackerService {
                                     this.connectedToDb$.next(true);
                                 } else {
                                     console.debug("Table contacts does not exits. Creatint it ...")
-                                    this.db.executeSql('CREATE TABLE contacts (id varchar(32), uuid varchar(36), timestamp_from integer, timestamp_to integer, rssi int);', [])
+                                    this.db.executeSql('CREATE TABLE contacts (id varchar(32), key varchar(256), address varchar(256), timestamp_from integer, timestamp_to integer, rssi int);', [])
                                         .then(() => {
                                             this.connectedToDb$.next(true);
                                             this.refreshContactsCount();
@@ -81,16 +81,17 @@ export class ContactTrackerService {
 
     }
 
-    public trackContact(uuid: string, rssi: number, address: string) {
+    public trackContact(address: string, encryptedAddress: string, rssi: number) {
 
         let contact = new Contact();
         contact.id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        contact.uuid = uuid;
+        contact.address = address;
+        contact.encryptedAddress = encryptedAddress;
         contact.timestampFrom = new Date().getTime();
         contact.timestampTo = new Date().getTime();
         contact.rssi = rssi;
 
-        return this._doTrackContact(contact, address);
+        return this._doTrackContact(contact);
 
     }
 
@@ -100,32 +101,32 @@ export class ContactTrackerService {
         })
     }
 
-    public _doTrackContact(contact: Contact, address: string) {
+    public _doTrackContact(contact: Contact) {
 
         let returnValue: Subject<boolean> = new Subject();
 
         if(this.db != null) {
 
-            this.db.executeSql("INSERT INTO contacts(id, uuid, timestamp_from, timestamp_to, rssi) values (?, ?, ?, ?, ?)",
-                [contact.id, contact.uuid, contact.timestampFrom, contact.timestampTo, contact.rssi]).then(result => {
-                this.knownContacts.set(address, contact); //update the contact
-                console.debug("[Contact tracker] Inserted new contact with uuid " + contact.uuid);
+            this.db.executeSql("INSERT INTO contacts(id, address, encryptedAddress, timestamp_from, timestamp_to, rssi) values (?, ?, ?, ?, ?)",
+                [contact.id, contact.address, contact.encryptedAddress, contact.timestampFrom, contact.timestampTo, contact.rssi]).then(result => {
+                this.knownContacts.set(contact.address, contact); //update the contact
+                console.debug("[Contact tracker] Inserted new contact with key " + contact.encryptedAddress);
                 returnValue.next(true);
                 this.refreshContactsCount();
                 let devicesToRemove = [];
                 for (let value of this.nearestDevices.values()) {
-                    if(value.uuid == contact.uuid && value.id != contact.id) {
+                    if(value.address == contact.address && value.id != contact.id) {
                         devicesToRemove.push(value.id);
                     }
                 }
                 devicesToRemove.forEach(deviceToRemove => {
                     this.nearestDevices.delete(deviceToRemove);
                 });
-                this.nearestDevices.set(contact.id, {id: contact.id, uuid: contact.uuid, rssi: contact.rssi, date: new Date()});
+                this.nearestDevices.set(contact.id, {id: contact.id, address: contact.address, encryptedAddress: contact.encryptedAddress, rssi: contact.rssi, date: new Date()});
                 this.contactAdded$.next(true);
                 this.contactAddedOrUpdated$.next(true);
             }).catch(error => {
-                console.error("Error trying to insert a contact: " + contact.uuid);
+                console.error("Error trying to insert a contact: (" + contact.address + ", " + contact.encryptedAddress + ")");
                 returnValue.next(false);
             });
         }
@@ -169,7 +170,7 @@ export class ContactTrackerService {
         //otherwise create a new contact
         if (new Date().getTime() - this.knownContacts.get(address).timestampTo - 3600000 > 0) {
             let contact = this.knownContacts.get(address);
-            this.trackContact(contact.uuid, rssi, address);
+            //this.trackContact(contact.address, rssi);
         }
         else {
             this._updateTrack(address, rssi);
@@ -191,7 +192,7 @@ export class ContactTrackerService {
             this.db.executeSql("UPDATE contacts set rssi = ?, timestamp_to = ? where id = ?",
                 [contact.rssi, contact.timestampTo, contact.id]).then(result => {
                 this.knownContacts.set(address, contact); //update the contact
-                console.debug("[Contact tracker] Updated existing contact with uuid " + contact.uuid);
+                console.debug("[Contact tracker] Updated existing contact with uuid " + contact.encryptedAddress);
                 if(this.nearestDevices.has(contact.id)) {
                     this.nearestDevices.get(contact.id)['rssi'] = rssi;
                     this.nearestDevices.get(contact.id)['date'] = new Date();
@@ -199,7 +200,7 @@ export class ContactTrackerService {
                 this.contactAddedOrUpdated$.next(true);
                 returnValue.next(true);
             }).catch(error => {
-                console.error("Error trying to insert a contact: " + contact.uuid);
+                console.error("Error trying to insert a contact: " + contact.encryptedAddress);
                 returnValue.next(false);
             });
         }

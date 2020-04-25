@@ -1,5 +1,5 @@
 import {Inject, Injectable} from "@angular/core";
-import {BluetoothLE, NotifyParams, WriteCharacteristicParams} from "@ionic-native/bluetooth-le/ngx";
+import {BluetoothLE, ConnectionPriority, NotifyParams, WriteCharacteristicParams} from "@ionic-native/bluetooth-le/ngx";
 import {Platform} from "@ionic/angular";
 import {BehaviorSubject, Subject} from "rxjs";
 import {ContactTrackerService} from "../contacts/contact-tracker.service";
@@ -264,26 +264,7 @@ export class BluetoothTrackingService {
 
             if (connectionResult.status == 'connected') {
 
-                let changeConnectionPriorityPromise = new Promise((resolve, reject) => {
-                    //just in android: change priority to hight
-                    if (this.platform.is('android')) {
-                        this.bluetoothLE.requestConnectionPriority({
-                            address: address,
-                            connectionPriority: "high"
-                        }).then(result => {
-                            console.log("[BluetoothLE] request connection priority result: " + JSON.stringify(result));
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error("[BluetoothLE] error requesting connection priority result: " + JSON.stringify(error));
-                            resolve();
-                        });
-                    } else {
-                        resolve();
-                    }
-                });
-
-                changeConnectionPriorityPromise.then(result => {
+                this.changeConnectionPriority(address).then(result => {
 
                     this.bluetoothLE.discover({address: address, clearCache: true}).then(discoverResult => {
 
@@ -321,6 +302,27 @@ export class BluetoothTrackingService {
 
         });
 
+    }
+
+    public changeConnectionPriority(address: string, priority: ConnectionPriority = "high") {
+        return new Promise((resolve, reject) => {
+            //just in android: change priority to hight
+            if (this.platform.is('android')) {
+                this.bluetoothLE.requestConnectionPriority({
+                    address: address,
+                    connectionPriority: priority
+                }).then(result => {
+                    console.log("[BluetoothLE] request connection priority result: " + JSON.stringify(result));
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("[BluetoothLE] error requesting connection priority result: " + JSON.stringify(error));
+                    resolve();
+                });
+            } else {
+                resolve();
+            }
+        });
     }
 
     public startScan(backgroundMode = false) {

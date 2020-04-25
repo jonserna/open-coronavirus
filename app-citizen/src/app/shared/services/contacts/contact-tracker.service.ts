@@ -108,7 +108,7 @@ export class ContactTrackerService {
 
         if(this.db != null) {
 
-            this.db.executeSql("INSERT INTO contacts(id, address, encrypted_data, encryption_timestamp, timestamp_from, timestamp_to, rssi) values (?, ?, ?, ?, ?)",
+            this.db.executeSql("INSERT INTO contacts(id, address, encrypted_data, encryption_timestamp, timestamp_from, timestamp_to, rssi) values (?, ?, ?, ?, ?, ?, ?)",
                 [contact.id, contact.address, contact.encryptedData, contact.encryptionTimestamp, contact.timestampFrom, contact.timestampTo, contact.rssi]).then(result => {
                 this.knownContacts.set(contact.address, contact); //update the contact
                 console.debug("[Contact tracker] Inserted new contact from address " + contact.address);

@@ -1,5 +1,5 @@
 import {Inject, Injectable} from "@angular/core";
-import {BluetoothLE, ConnectionPriority, NotifyParams, WriteCharacteristicParams} from "@ionic-native/bluetooth-le/ngx";
+import {BluetoothLE, ConnectionPriority} from "@ionic-native/bluetooth-le/ngx";
 import {Platform} from "@ionic/angular";
 import {BehaviorSubject, Subject} from "rxjs";
 import {ContactTrackerService} from "../contacts/contact-tracker.service";
@@ -20,7 +20,7 @@ export class BluetoothTrackingService {
 
     public static serviceUUID = "C0C0C0C0-DEE8-B109-8DB0-3DBD690003C0";
     public static characteristicUUID = "CACACACA-DEE8-B109-8DB0-3DBD690003C0";
-    public static timeScanningInMillis = 15000;
+    public static timeScanningInMillis = 10000;
     public static timeWithoutScanningInMillis = 30000;
 
     protected myAddress;
@@ -208,10 +208,16 @@ export class BluetoothTrackingService {
 
                     if(result.service == BluetoothTrackingService.serviceUUID && result.characteristic == BluetoothTrackingService.characteristicUUID) {
 
+                        //first of all
+                        this.bluetoothLE.respond({
+                            requestId: result.requestId,
+                            value: result.value
+                        });
+
                         console.debug("[BluetoothLE] Received key part from " + result.address + ", part: " + result.value);
 
                         if(!this.bluetoothMessages.has(result.address)) {
-                            this.bluetoothMessages.set(result.address, new BTLEMessage());
+                            this.bluetoothMessages.set(result.address, new BTLEMessage(this.bluetoothLE));
                         }
 
                         let btleMessage = this.bluetoothMessages.get(result.address);
@@ -221,9 +227,9 @@ export class BluetoothTrackingService {
                         if(btleMessage.isMessageCompleted()) {
                             let message = btleMessage.getMessage();
                             console.debug("**************************************************************");
-                            console.debug("    Received key from " + result.address + ", key: " + message);
+                            console.debug("    Received key from " + result.address + ": " + message);
                             console.debug("**************************************************************");
-                            let encryptedKey: EncryptedKey = this.decodeReceivedData(message);
+                            let encryptedKey: EncryptedKey = JSON.parse(message);
                             let rssi = null;
                             if(this.bluetoothRSSIs.has(result.address)) {
                                 rssi = this.bluetoothRSSIs.get(result.address);
@@ -244,12 +250,7 @@ export class BluetoothTrackingService {
 
     }
 
-    public decodeReceivedData(receivedData) {
-        let dataJson = this.bluetoothLE.bytesToString(this.bluetoothLE.encodedStringToBytes(receivedData));
-        return JSON.parse(dataJson);
-    }
-
-    public sendKey(address: string) {
+    sendKey(address: string) {
 
         let encryptedData = this.keyManager.generateEncryptedKey();
 
@@ -258,7 +259,8 @@ export class BluetoothTrackingService {
         console.log("[BluetoothLE] JSON to send: " + jsonEncryptedData);
 
         console.debug('[BluetoothLE] connecting to ' + address + " ...");
-        this.bluetoothLE.connect({address: address, autoConnect: true}).subscribe(connectionResult => {
+
+        this.bluetoothLE.connect({address: address}).subscribe(connectionResult => {
 
             console.debug('[BluetoothLE] connected to ' + address + ": " + JSON.stringify(connectionResult));
 
@@ -266,39 +268,65 @@ export class BluetoothTrackingService {
 
                 this.changeConnectionPriority(address).then(result => {
 
-                    this.bluetoothLE.discover({address: address, clearCache: true}).then(discoverResult => {
+                    this.bluetoothLE.discover({address: address, clearCache: true}).then(async discoverResult => {
 
-                        console.debug('[BluetoothLE] discover result to ' + address + ": " + JSON.stringify(discoverResult));
+                        console.debug('[BluetoothLE] discover result to ' + address + ": " + JSON.stringify(discoverResult) + " - encrypted: " + jsonEncryptedData);
 
-                        let value = this.bluetoothLE.bytesToEncodedString(this.bluetoothLE.stringToBytes(jsonEncryptedData));
-                        console.debug('[BluetoothLE] will write to ' + address + ' data: ' + value);
-
-                        this.bluetoothLE.writeQ({
-                            address: address,
-                            service: BluetoothTrackingService.serviceUUID,
-                            characteristic: BluetoothTrackingService.characteristicUUID,
-                            value: value
-                        }).then(result => {
-                            console.debug('[BluetoothLE] key written to ' + address + ": " + JSON.stringify(result));
-                            this.bluetoothLE.disconnect({address: address});
-                        })
-                        .catch(error => {
-                            console.debug('[BluetoothLE] error trying to write key to ' + address + ": " + JSON.stringify(error));
-                            this.bluetoothLE.close({address: address});
-                            if(!!error.error && error.error == 'isDisconnected') {
-                                console.debug("[BluetoothLE] trying again in 5 seconds ...")
-                                setTimeout(() => {
-                                    this.sendKey(address);
-                                }, 5000);
+                        do {
+                            let jsonPart;
+                            if(jsonEncryptedData.length > 12) {
+                                jsonPart = jsonEncryptedData.substring(0, 12);
+                                jsonEncryptedData = jsonEncryptedData.substring(12);
                             }
-                        })
-                        .finally(() => {
-                            //this.bluetoothLE.disconnect({address: address});
-                        });
+                            else {
+                                jsonPart = jsonEncryptedData;
+                                jsonEncryptedData = "";
+                            }
+                            let value = this.bluetoothLE.bytesToEncodedString(this.bluetoothLE.stringToBytes(jsonPart));
+                            console.debug('[BluetoothLE] will write to ' + address + ' data: [' + jsonPart + "], encoded: [" + value + "]");
+                            await this.write(address, value);
+
+                        } while(jsonEncryptedData.length > 0);
+
+                        //finally disconnect from the remote bluetooth address
+                        this.bluetoothLE.disconnect({address: address});
+
                     });
 
                 });
             }
+
+        });
+
+    }
+
+    async write(address, value) {
+        return new Promise((resolve, reject) => {
+
+            setTimeout(() => {
+                this.bluetoothLE.write({
+                    address: address,
+                    service: BluetoothTrackingService.serviceUUID,
+                    characteristic: BluetoothTrackingService.characteristicUUID,
+                    value: value
+                }).then(result => {
+                    console.debug('[BluetoothLE] key written to ' + address + ": " + JSON.stringify(result));
+                    resolve();
+                })
+                .catch(error => {
+                    reject();
+                    console.debug('[BluetoothLE] error trying to write key to ' + address + ": " + JSON.stringify(error));
+                    this.bluetoothLE.close({address: address}).then(closed => {
+
+                    })
+                    .finally(() => {
+                        console.debug("[BluetoothLE] trying again in 5 seconds ...")
+                        setTimeout(() => {
+                            this.sendKey(address);
+                        }, 5000);
+                    })
+                });
+            }, 200); //ensure that each call to write is separated at least 200 millis
 
         });
 
@@ -355,12 +383,11 @@ export class BluetoothTrackingService {
                 if(device.address != null) {
                     this.bluetoothRSSIs.set(device.address, device.rssi);
 
-                    if (!this.knownAddress.has(device.address) && this.platform.is('android')) {
+                    if (!this.knownAddress.has(device.address)) {
                         this.knownAddress.set(device.address, true);
                         console.debug("**************************************************************");
                         console.debug("    Send Key to " + device.address + ", rssi: " + device.rssi);
                         console.debug("**************************************************************");
-                        this.stopScan(true);
                         this.sendKey(device.address);
                     } else {
                         this.contactTrackerService.updateTrack(device.address, device.rssi);
@@ -371,7 +398,7 @@ export class BluetoothTrackingService {
 
             if (!backgroundMode) {
                 this.scanTimeout = setTimeout(() => {
-                    //this.stopScan(backgroundMode);
+                    this.stopScan(backgroundMode);
                 }, BluetoothTrackingService.timeScanningInMillis);
             }
         }
@@ -380,28 +407,32 @@ export class BluetoothTrackingService {
 
     public stopScan(backgroundMode = false) {
         let returnValue: Promise<boolean> = new Promise(resolve => {
-
-            this.isScanning = false;
-            if (backgroundMode) {
-                console.debug("[BluetoothLE] Stop scanning in background mode ...");
-            } else {
-                console.debug("[BluetoothLE] Stop scanning ...");
-            }
-            this.bluetoothLE.stopScan().then(result => {
-                console.log('[BluetoothLE] Stop scanning successfully!');
-                resolve(true);
-            })
-            .catch(error => {
-                console.error('[BluetoothLE] Error trying to stop scanning: ' + JSON.stringify(error));
-                resolve(false);
-            })
-            .finally(() => {
-                if (!backgroundMode) {
-                    this.scanTimeout = setTimeout(() => {
-                        this.startScan(backgroundMode);
-                    }, BluetoothTrackingService.timeWithoutScanningInMillis);
+            if(this.isScanning) {
+                this.isScanning = false;
+                if (backgroundMode) {
+                    console.debug("[BluetoothLE] Stop scanning in background mode ...");
+                } else {
+                    console.debug("[BluetoothLE] Stop scanning ...");
                 }
-            })
+                this.bluetoothLE.stopScan().then(result => {
+                    console.log('[BluetoothLE] Stop scanning successfully!');
+                    resolve(true);
+                })
+                .catch(error => {
+                    console.error('[BluetoothLE] Error trying to stop scanning: ' + JSON.stringify(error));
+                    resolve(false);
+                })
+                .finally(() => {
+                    if (!backgroundMode) {
+                        this.scanTimeout = setTimeout(() => {
+                            this.startScan(backgroundMode);
+                        }, BluetoothTrackingService.timeWithoutScanningInMillis);
+                    }
+                });
+            }
+            else {
+                resolve(true);
+            }
         });
 
         return returnValue;
@@ -436,6 +467,8 @@ class BTLEMessage {
 
     protected messages = new Map<number, string>();
 
+    public constructor(protected bluetoothLE: BluetoothLE) {}
+
     addPart(index, message) {
         this.messages.set(index, message);
     }
@@ -447,10 +480,12 @@ class BTLEMessage {
                 return false;
             }
         }
-        if(this.messages.get(this.messages.size - 1).endsWith('==')) {
+        //finally check if resultant message is JSON:
+        let message = this.getMessage();
+        try {
+            JSON.parse(message);
             return true;
-        }
-        else {
+        } catch (e) {
             return false;
         }
 
@@ -460,7 +495,7 @@ class BTLEMessage {
         let returnValue = "";
         for(let i = 0; i < this.messages.size; i++) {
             if(this.messages.has(i)) {
-                returnValue += this.messages.get(i);
+                returnValue += this.bluetoothLE.bytesToString(this.bluetoothLE.encodedStringToBytes(this.messages.get(i)));
             }
             else {
                 return null;

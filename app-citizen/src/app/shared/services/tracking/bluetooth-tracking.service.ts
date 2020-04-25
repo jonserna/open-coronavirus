@@ -1,12 +1,12 @@
 import {Inject, Injectable} from "@angular/core";
-import {BluetoothLE} from "@ionic-native/bluetooth-le/ngx";
+import {BluetoothLE, WriteCharacteristicParams} from "@ionic-native/bluetooth-le/ngx";
 import {Platform} from "@ionic/angular";
 import {BehaviorSubject, Subject} from "rxjs";
-import {BLE} from "@ionic-native/ble/ngx";
 import {ContactTrackerService} from "../contacts/contact-tracker.service";
 import {PatientService} from "../patient.service";
-import { PermissionsService } from '../permissions.service';
+import {PermissionsService} from '../permissions.service';
 import {Plugins} from "@capacitor/core";
+import {EncryptedKey, KeyManagerService} from "../key-management/key-manager.service";
 
 const { App, BackgroundTask } = Plugins;
 
@@ -15,11 +15,10 @@ export class BluetoothTrackingService {
 
     public btEnabled$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
-    private patientServiceUUID;
-
     protected addressesBeingTracked = new Map<string, boolean>();
 
     public static serviceUUID = "C0C0C0C0-DEE8-B109-8DB0-3DBD690003C0";
+    public static characteristicUUID = "CACACACA-DEE8-B109-8DB0-3DBD690003C0";
     public static timeScanningInMillis = 15000;
     public static timeWithoutScanningInMillis = 30000;
 
@@ -32,11 +31,14 @@ export class BluetoothTrackingService {
     protected scanTimeout;
     protected backgroundMode = false;
 
+    protected knownAddress = new Map<string, boolean>();
+    protected bluetoothRSSIs = new Map<string, number>();
+
     protected restoreKey = "Open Coronavirus";
 
-    constructor(protected bluetoothle: BluetoothLE,
-                protected ble: BLE,
+    constructor(protected bluetoothLE: BluetoothLE,
                 protected platform: Platform,
+                protected keyManager: KeyManagerService,
                 protected patientService: PatientService,
                 protected permissionsService: PermissionsService,
                 @Inject('settings') protected settings,
@@ -49,57 +51,37 @@ export class BluetoothTrackingService {
 
         this.prepareBackgroundMode();
 
-        this.bluetoothle.getAdapterInfo().then(result => {
-            console.debug("[BluetoothLE] Device info: " + JSON.stringify(result));
+        this.platform.ready().then((readySource) => {
+            if (this.settings.enabled.bluetooth && this.activated == false) {
+
+                this.activated = true;
+                console.debug("[BluetoothLE] Initialize bluetooth LE ...");
+
+                // request => true / false (default) - Should user be prompted to enable Bluetooth
+                // statusReceiver => true / false (default) - Should change in Bluetooth status notifications be sent.
+                // restoreKey => A unique string to identify your app. Bluetooth Central background mode is required to
+                // use this, but background mode doesn't seem to require specifying the restoreKey.
+                let params = {request: true, statusReceiver: false, restoreKey: this.restoreKey};
+
+                this.bluetoothLE.initialize(params).subscribe(result => {
+                    console.debug("[BluetoothLE] Initialization result: " + JSON.stringify(result));
+                });
+                //Use this way because the issue iOS: initialize promise resolve not called #477
+                setTimeout(() => {
+                    this.btEnabled$.next(true);
+                }, 10000);
+
+                this.btEnabled$.subscribe(enabled => {
+                    if (enabled) {
+                        this.startScan();
+                        this.startAdvertising();
+                    }
+                })
+
+            } else {
+                this.permissionsService.goToNextPermissionIfPermissionsRequested();
+            }
         });
-
-        this.btEnabled$.next(true);
-
-        /*
-
-        if(this.settings.enabled.bluetooth && this.activated == false) {
-            this.activated = true;
-
-            this.patientService.patientLoaded$.subscribe(loaded => {
-
-                if (loaded && this.patientService.patient != null && this.patientService.patient.id != null) {
-
-                    this.patientServiceUUID = this.patientService.patient.serviceAdvertisementUUID;
-
-                    this.platform.ready().then((readySource) => {
-
-                        console.debug("[BluetoothLE] Initialize bluetooth LE ...");
-
-                        // request => true / false (default) - Should user be prompted to enable Bluetooth
-                        // statusReceiver => true / false (default) - Should change in Bluetooth status notifications be sent.
-                        // restoreKey => A unique string to identify your app. Bluetooth Central background mode is required to
-                        // use this, but background mode doesn't seem to require specifying the restoreKey.
-                        let params = {request: true, statusReceiver: false, restoreKey: this.restoreKey};
-
-                        this.bluetoothle.initialize(params).subscribe(result => {
-                            console.debug("[BluetoothLE] Initialization result: " + JSON.stringify(result));
-                        });
-                        //Use this way because the issue iOS: initialize promise resolve not called #477
-                        setTimeout(() => {
-                            this.btEnabled$.next(true);
-                        }, 10000);
-
-                    });
-
-                    this.btEnabled$.subscribe(enabled => {
-                        if (enabled) {
-                            this.startScan();
-                            this.startAdvertising();
-                        }
-                    })
-                }
-            });
-
-        } else {
-            this.permissionsService.goToNextPermissionIfPermissionsRequested();
-        }
-
-         */
 
         return this.btEnabled$;
 
@@ -141,7 +123,7 @@ export class BluetoothTrackingService {
 
     protected addService() {
 
-        console.debug("[BluetoothLE] Add service with UUID: " + this.patientServiceUUID);
+        console.debug("[BluetoothLE] Add service with UUID: " + BluetoothTrackingService.serviceUUID);
 
         let returnValue: Subject<boolean> = new Subject();
 
@@ -149,7 +131,7 @@ export class BluetoothTrackingService {
             service: BluetoothTrackingService.serviceUUID,
             characteristics: [
                 {
-                    uuid: this.patientServiceUUID,
+                    uuid: BluetoothTrackingService.characteristicUUID,
                     permissions: {
                         read: true,
                         write: true,
@@ -165,14 +147,14 @@ export class BluetoothTrackingService {
             ]
         };
 
-        this.bluetoothle.addService(params).then(result => {
+        this.bluetoothLE.addService(params).then(result => {
             console.debug('[BluetoothLE] addService result: ' + JSON.stringify(result));
             returnValue.next(true);
         })
-            .catch(error => {
-                console.error('[BluetoothLE] addService error: ' + JSON.stringify(error));
-                returnValue.next(false);
-            });
+        .catch(error => {
+            console.error('[BluetoothLE] addService error: ' + JSON.stringify(error));
+            returnValue.next(false);
+        });
 
         return returnValue;
     }
@@ -189,7 +171,7 @@ export class BluetoothTrackingService {
                 "restoreKey": this.restoreKey
             };
 
-            this.bluetoothle.initializePeripheral(params).subscribe(result => {
+            this.bluetoothLE.initializePeripheral(params).subscribe(result => {
 
                 if (result.status == 'enabled') {
 
@@ -207,20 +189,72 @@ export class BluetoothTrackingService {
                                 "timeout": 0,
                             };
 
-                            this.bluetoothle.startAdvertising(params).then(result => {
+                            this.bluetoothLE.startAdvertising(params).then(result => {
                                 console.debug("[BluetoothLE] Started advertising: " + JSON.stringify(result));
                             })
-                                .catch(error => {
-                                    console.error("[BluetoothLE] Error trying to advertise: " + JSON.stringify(error));
-                                })
+                            .catch(error => {
+                                console.error("[BluetoothLE] Error trying to advertise: " + JSON.stringify(error));
+                            });
                         }
 
                     });
 
                 }
+                else if(result.status == 'writeRequested' ) {
+
+                    if(result.service == BluetoothTrackingService.serviceUUID && result.characteristic == BluetoothTrackingService.characteristicUUID) {
+
+                        console.debug("**************************************************************");
+                        console.debug("    Received Key from " + result.address + ", key: " + result.value);
+                        console.debug("**************************************************************");
+
+                        let address = result.address;
+                        let encryptedKey: EncryptedKey = this.decodeReceivedData(result.value);
+                        let rssi = null;
+                        if(this.bluetoothRSSIs.has(address)) {
+                            rssi = this.bluetoothRSSIs.get(address);
+                        }
+                        this.contactTrackerService.trackContact(address, encryptedKey, rssi);
+                    }
+
+                }
 
             });
         }
+
+    }
+
+    public decodeReceivedData(receivedData) {
+        let dataJson = this.bluetoothLE.bytesToString(this.bluetoothLE.encodedStringToBytes(receivedData));
+        return JSON.parse(dataJson);
+    }
+
+    public sendKey(address: string) {
+
+        let encryptedData = this.keyManager.generateEncryptedKey();
+
+        let jsonEncryptedData = JSON.stringify(encryptedData);
+
+        console.debug('[BluetoothLE] connecting to ' + address + " ...");
+        this.bluetoothLE.connect({address: address, autoConnect: true}).subscribe(connected => {
+            console.debug('[BluetoothLE] connected to ' + address + " ...");
+
+            let writeCharacteristicParamters: WriteCharacteristicParams = new class implements WriteCharacteristicParams {
+                address: string;
+                characteristic: string;
+                service: string;
+                type: string;
+                value: string;
+            }
+
+            writeCharacteristicParamters.address = address;
+            writeCharacteristicParamters.characteristic = BluetoothTrackingService.characteristicUUID;
+            writeCharacteristicParamters.service = BluetoothTrackingService.serviceUUID;
+            writeCharacteristicParamters.value = this.bluetoothLE.bytesToEncodedString(this.bluetoothLE.stringToBytes(jsonEncryptedData));
+
+            this.bluetoothLE.writeQ(writeCharacteristicParamters);
+
+        });
 
     }
 
@@ -236,36 +270,33 @@ export class BluetoothTrackingService {
                 console.debug("[BluetoothLE] Start scanning ...");
             }
 
-            this.ble.startScan([BluetoothTrackingService.serviceUUID]).subscribe(device => {
+            let params = {
+                "services": [
+                    BluetoothTrackingService.serviceUUID,
+                ],
+                "allowDuplicates": false,
+                "scanMode": this.bluetoothLE.SCAN_MODE_BALANCED,
+                "matchMode": this.bluetoothLE.MATCH_MODE_AGGRESSIVE,
+                "matchNum": this.bluetoothLE.MATCH_NUM_MAX_ADVERTISEMENT,
+                "callbackType": this.bluetoothLE.CALLBACK_TYPE_ALL_MATCHES,
+            };
 
-                if (!this.contactTrackerService.isKnownContact(device.id)) {
-                    //avoid duplicate calls while processing an item (because this is a subscription callback from ble.scan method
-                    console.debug('[BluetoothLE] connecting to ' + device.id + " ...");
-                    this.ble.connect(device.id).subscribe(result => {
-                        console.debug('[BluetoothLE] connected result: ' + JSON.stringify(result));
+            this.bluetoothLE.startScan(params).subscribe(device => {
 
+                console.log("[BluetoothLE] Scan callback received: " + JSON.stringify(device));
 
+                if(device.address != null) {
+                    this.bluetoothRSSIs.set(device.address, device.rssi);
 
-                        result.characteristics.forEach(characteristic => {
-                            if (characteristic.service.toUpperCase() == BluetoothTrackingService.serviceUUID) {
-                                let targetCharacteristicUUID = characteristic.characteristic;
-                                console.debug("**********************************************************************************************");
-                                console.debug("    Open Coronavirus Target service detected: " + targetCharacteristicUUID + ", rssi: " + device.rssi);
-                                console.debug("**********************************************************************************************");
-                                //now save the device, with the address and so on into local storage
-                                if (!this.addressesBeingTracked.has(device.id)) {
-                                    this.addressesBeingTracked.set(device.id, true);
-                                    //this.contactTrackerService.trackContact(targetCharacteristicUUID, device.rssi, device.id);
-                                }
-                            }
-                        });
-                        this.ble.disconnect(device.id); //disconnect from the device!!! so important
-                    },
-                    peripheralData => {
-                        console.error('[BluetoothLE] error connecting: ' + JSON.stringify(peripheralData));
-                    });
-                } else {
-                    this.contactTrackerService.updateTrack(device.id, device.rssi);
+                    if (!this.knownAddress.has(device.address)) {
+                        this.knownAddress.set(device.address, true);
+                        console.debug("**************************************************************");
+                        console.debug("    Send Key to " + device.address + ", rssi: " + device.rssi);
+                        console.debug("**************************************************************");
+                        this.sendKey(device.address);
+                    } else {
+                        this.contactTrackerService.updateTrack(device.address, device.rssi);
+                    }
                 }
 
             });
@@ -288,7 +319,7 @@ export class BluetoothTrackingService {
             } else {
                 console.debug("[BluetoothLE] Stop scanning ...");
             }
-            this.ble.stopScan().then(result => {
+            this.bluetoothLE.stopScan().then(result => {
                 console.log('[BluetoothLE] Stop scanning successfully!');
                 resolve(true);
             })

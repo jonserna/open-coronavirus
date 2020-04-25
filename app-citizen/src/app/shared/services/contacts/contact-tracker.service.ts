@@ -7,6 +7,7 @@ import {ContactControllerService, ContactWithRelations} from "../../sdk";
 import {PatientService} from "../patient.service";
 import { ContactUploadRequestComponent } from 'src/app/main/contact-upload-request/contact-upload-request.component';
 import { ContactUploadThanksComponent } from 'src/app/main/contact-upload-thanks/contact-upload-thanks.component';
+import {EncryptedKey} from "../key-management/key-manager.service";
 
 
 @Injectable()
@@ -59,7 +60,7 @@ export class ContactTrackerService {
                                     this.connectedToDb$.next(true);
                                 } else {
                                     console.debug("Table contacts does not exits. Creatint it ...")
-                                    this.db.executeSql('CREATE TABLE contacts (id varchar(32), key varchar(256), address varchar(256), timestamp_from integer, timestamp_to integer, rssi int);', [])
+                                    this.db.executeSql('CREATE TABLE contacts (id VARCHAR(32), address VARCHAR(256), encrypted_data TEXT, encryption_timestamp INTEGER, timestamp_from INTEGER, timestamp_to INTEGER, rssi INT);', [])
                                         .then(() => {
                                             this.connectedToDb$.next(true);
                                             this.refreshContactsCount();
@@ -78,15 +79,15 @@ export class ContactTrackerService {
             }
         })
 
-
     }
 
-    public trackContact(address: string, encryptedAddress: string, rssi: number) {
+    public trackContact(address: string, encryptedData: EncryptedKey, rssi: number) {
 
         let contact = new Contact();
         contact.id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         contact.address = address;
-        contact.encryptedAddress = encryptedAddress;
+        contact.encryptedData = encryptedData.encryptedData;
+        contact.encryptionTimestamp = encryptedData.timestamp;
         contact.timestampFrom = new Date().getTime();
         contact.timestampTo = new Date().getTime();
         contact.rssi = rssi;
@@ -107,10 +108,10 @@ export class ContactTrackerService {
 
         if(this.db != null) {
 
-            this.db.executeSql("INSERT INTO contacts(id, address, encryptedAddress, timestamp_from, timestamp_to, rssi) values (?, ?, ?, ?, ?)",
-                [contact.id, contact.address, contact.encryptedAddress, contact.timestampFrom, contact.timestampTo, contact.rssi]).then(result => {
+            this.db.executeSql("INSERT INTO contacts(id, address, encrypted_data, encryption_timestamp, timestamp_from, timestamp_to, rssi) values (?, ?, ?, ?, ?)",
+                [contact.id, contact.address, contact.encryptedData, contact.encryptionTimestamp, contact.timestampFrom, contact.timestampTo, contact.rssi]).then(result => {
                 this.knownContacts.set(contact.address, contact); //update the contact
-                console.debug("[Contact tracker] Inserted new contact with key " + contact.encryptedAddress);
+                console.debug("[Contact tracker] Inserted new contact from address " + contact.address);
                 returnValue.next(true);
                 this.refreshContactsCount();
                 let devicesToRemove = [];
@@ -122,11 +123,11 @@ export class ContactTrackerService {
                 devicesToRemove.forEach(deviceToRemove => {
                     this.nearestDevices.delete(deviceToRemove);
                 });
-                this.nearestDevices.set(contact.id, {id: contact.id, address: contact.address, encryptedAddress: contact.encryptedAddress, rssi: contact.rssi, date: new Date()});
+                this.nearestDevices.set(contact.id, {id: contact.id, address: contact.address, encryptedData: contact.encryptedData, rssi: contact.rssi, date: new Date()});
                 this.contactAdded$.next(true);
                 this.contactAddedOrUpdated$.next(true);
             }).catch(error => {
-                console.error("Error trying to insert a contact: (" + contact.address + ", " + contact.encryptedAddress + ")");
+                console.error("Error trying to insert a contact from address " + contact.address + ": " + JSON.stringify(error));
                 returnValue.next(false);
             });
         }
@@ -149,7 +150,7 @@ export class ContactTrackerService {
     public getContactsCount() {
         return new Promise((resolve, reject) => {
             if(this.db != null) {
-                this.db.executeSql('SELECT count(distinct(uuid)) AS TOTAL FROM contacts', []).then(result => {
+                this.db.executeSql('SELECT count(distinct(address)) AS TOTAL FROM contacts', []).then(result => {
                     console.log('[Contact tracker] contacts count: ' + JSON.stringify(result.rows.item(0).TOTAL));
                     resolve(result.rows.item(0).TOTAL);
                 }).catch(error => {
@@ -168,12 +169,13 @@ export class ContactTrackerService {
 
         //for contacts being registered in the last hour, just update the signal and the timestamp
         //otherwise create a new contact
-        if (new Date().getTime() - this.knownContacts.get(address).timestampTo - 3600000 > 0) {
-            let contact = this.knownContacts.get(address);
-            //this.trackContact(contact.address, rssi);
-        }
-        else {
-            this._updateTrack(address, rssi);
+        if (this.knownContacts.has(address)) {
+            if (new Date().getTime() - this.knownContacts.get(address).timestampTo - 3600000 > 0) {
+                let contact = this.knownContacts.get(address);
+                this.trackContact(contact.address, contact.toEncryptedData(), rssi);
+            } else {
+                this._updateTrack(address, rssi);
+            }
         }
 
     }
@@ -192,7 +194,7 @@ export class ContactTrackerService {
             this.db.executeSql("UPDATE contacts set rssi = ?, timestamp_to = ? where id = ?",
                 [contact.rssi, contact.timestampTo, contact.id]).then(result => {
                 this.knownContacts.set(address, contact); //update the contact
-                console.debug("[Contact tracker] Updated existing contact with uuid " + contact.encryptedAddress);
+                console.debug("[Contact tracker] Updated existing contact from address " + contact.address);
                 if(this.nearestDevices.has(contact.id)) {
                     this.nearestDevices.get(contact.id)['rssi'] = rssi;
                     this.nearestDevices.get(contact.id)['date'] = new Date();
@@ -200,7 +202,7 @@ export class ContactTrackerService {
                 this.contactAddedOrUpdated$.next(true);
                 returnValue.next(true);
             }).catch(error => {
-                console.error("Error trying to insert a contact: " + contact.encryptedAddress);
+                console.error("Error trying to insert a contact from address " + contact.address + ": " + JSON.stringify(error));
                 returnValue.next(false);
             });
         }

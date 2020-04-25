@@ -1,6 +1,5 @@
 import {Injectable} from "@angular/core";
-import SHA256 from 'crypto-js/sha256';
-import AES from 'crypto-js/aes';
+import * as crypto from "crypto-js";
 import {StorageService} from "../storage.service";
 import {Guid} from "guid-typescript";
 
@@ -12,25 +11,29 @@ export class KeyManagerService {
     protected currentKey = null;
     protected currentDate: Date = null;
 
-    public static SK_KEY = 'skKey';
+    public static SK_KEY = 'sk-key';
 
     public constructor(protected storageService: StorageService) {
 
         this.storageService.getItem(KeyManagerService.SK_KEY).subscribe(data => {
             if (data != null) {
-                this.initialDate = data.initialDate;
+                this.initialDate = new Date(data.initialDateTimestamp);
                 this.initialSK = data.initialSK;
             } else {
                 this.initialSK = this.generateNewKey(Guid.create().toString());
                 this.initialDate = new Date();
                 this.initialDate.setHours(0, 0, 0, 0);
+                this.storageService.setItem(KeyManagerService.SK_KEY, {
+                    initialDateTimestamp: this.initialDate.getTime(),
+                    initialSK: this.initialSK
+                });
             }
         });
 
     }
 
     public generateNewKey(value) {
-        let key = SHA256(value);
+        let key = crypto.SHA256(value).toString();
 
         return key;
     }
@@ -64,7 +67,7 @@ export class KeyManagerService {
         let returnValue = new EncryptedKey();
         let currentKey = this.getCurrentKey(); //this is so secret :)
         returnValue.timestamp = new Date().getTime(); //this is going to be returned with the encrypted data
-        returnValue.encryptedData = AES.encrypt(currentKey, returnValue.timestamp.toString());
+        returnValue.encryptedData = crypto.AES.encrypt(returnValue.timestamp.toString(), currentKey).toString();
 
         return returnValue;
     }

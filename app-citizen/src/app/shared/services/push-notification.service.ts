@@ -14,6 +14,7 @@ import {AlertController} from "@ionic/angular";
 import { PermissionsService } from './permissions.service';
 import {PatientStatus} from "../../../../../server/src/common/utils/enums";
 import {ContactTrackerService} from "./contacts/contact-tracker.service";
+import {KeyManagerService} from "./keys/key-manager.service";
 
 const { PushNotifications } = Plugins;
 
@@ -30,6 +31,7 @@ export class PushNotificationService {
                 public alertController: AlertController,
                 protected installationService: InstallationService,
                 protected contactTrackerService: ContactTrackerService,
+                protected keyManagerService: KeyManagerService,
                 protected installationControllerService: InstallationControllerService,
                 protected permissionsService: PermissionsService) { }
 
@@ -126,9 +128,13 @@ export class PushNotificationService {
                             if(showUploadContactRequestModal) {
                                 if (this.contactTrackerService.autoShareActivated) {
                                     console.debug('Autoshare activated, uploading contacts');
-                                    this.contactTrackerService.uploadContactsToServer();
+                                    if(this.settings.useDecentralizedProtocol) {
+                                        this.keyManagerService.uploadKeyToServer();
+                                    }
+                                    else {
+                                        this.contactTrackerService.uploadContactsToServer();
+                                    }
                                 }
-
                                 this.contactTrackerService.showUploadContactRequestModal();
                             }
                         }

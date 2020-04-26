@@ -22,6 +22,6 @@ export interface InstallationWithRelations {
     deviceId: string;
     pushRegistrationId?: string;
     patientId: string;
-    created?: string;
+    created?: Date;
 }
 

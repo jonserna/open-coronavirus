@@ -1,4 +1,4 @@
-import {EncryptedKey} from "../key-management/key-manager.service";
+import {EncryptedKey} from "../keys/key-manager.service";
 
 export class Contact {
 

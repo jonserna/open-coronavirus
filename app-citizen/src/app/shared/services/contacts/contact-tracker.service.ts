@@ -1,13 +1,13 @@
-import {Injectable, Inject} from "@angular/core";
+import {Inject, Injectable} from "@angular/core";
 import {SQLite, SQLiteObject} from "@ionic-native/sqlite/ngx";
 import {BehaviorSubject, Subject} from "rxjs";
 import {Contact} from "./contact";
-import {Platform, ModalController} from "@ionic/angular";
+import {ModalController, Platform} from "@ionic/angular";
 import {ContactControllerService, ContactWithRelations} from "../../sdk";
 import {PatientService} from "../patient.service";
-import { ContactUploadRequestComponent } from 'src/app/main/contact-upload-request/contact-upload-request.component';
-import { ContactUploadThanksComponent } from 'src/app/main/contact-upload-thanks/contact-upload-thanks.component';
-import {EncryptedKey} from "../key-management/key-manager.service";
+import {ContactUploadRequestComponent} from 'src/app/main/contact-upload-request/contact-upload-request.component';
+import {ContactUploadThanksComponent} from 'src/app/main/contact-upload-thanks/contact-upload-thanks.component';
+import {EncryptedKey} from "../keys/key-manager.service";
 
 
 @Injectable()

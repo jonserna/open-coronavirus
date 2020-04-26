@@ -10,3 +10,4 @@ export * from './document.model';
 export * from './contact.model';
 export * from './installation.model';
 export * from './min-version.model';
+export * from './infected-key.model';

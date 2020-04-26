@@ -6,7 +6,7 @@ import {ContactTrackerService} from "../contacts/contact-tracker.service";
 import {PatientService} from "../patient.service";
 import {PermissionsService} from '../permissions.service';
 import {Plugins} from "@capacitor/core";
-import {EncryptedKey, KeyManagerService} from "../key-management/key-manager.service";
+import {EncryptedKey, KeyManagerService} from "../keys/key-manager.service";
 
 
 const { App, BackgroundTask } = Plugins;
@@ -250,7 +250,7 @@ export class BluetoothTrackingService {
 
     }
 
-    sendKey(address: string) {
+    protected sendKey(address: string) {
 
         let encryptedData = this.keyManager.generateEncryptedKey();
 

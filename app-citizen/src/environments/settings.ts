@@ -20,6 +20,7 @@ export const settings = {
     followingUpUrl: '',
     appVersion: '1.0.0',
     techSupportPhone: '555 555 5555',
+    useDecentralizedProtocol: true,
     shareApp: {
         text: 'Compartir App para luchar juntos'
     },

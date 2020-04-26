@@ -24,6 +24,6 @@ export interface TestResultWithRelations {
     patientId: string;
     result?: number;
     action?: number;
-    created?: string;
+    created?: Date;
 }
 

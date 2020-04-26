@@ -40,7 +40,7 @@ import { Device } from '@ionic-native/device/ngx';
 import { TestQuestionService } from './shared/services/test-question.service';
 import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 import {AndroidPermissions} from "@ionic-native/android-permissions/ngx";
-import {KeyManagerService} from "./shared/services/key-management/key-manager.service";
+import {KeyManagerService} from "./shared/services/keys/key-manager.service";
 
 @NgModule({
     declarations: [AppComponent, MainComponent],

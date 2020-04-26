@@ -23,6 +23,6 @@ export interface NewTestResult {
     patientId: string;
     result?: number;
     action?: number;
-    created?: string;
+    created?: Date;
 }
 

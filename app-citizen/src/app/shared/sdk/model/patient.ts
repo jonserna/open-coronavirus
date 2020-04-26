@@ -20,7 +20,7 @@ export interface Patient {
     lastName?: string;
     documentNumber: string;
     healthInsuranceCardNumber?: string;
-    birthday: string;
+    birthday: Date;
     age?: number;
     gender?: number;
     street?: string;
@@ -31,8 +31,8 @@ export interface Patient {
     phone: string;
     serviceAdvertisementUUID?: string;
     appId?: string;
-    created?: string;
-    updated?: string;
+    created?: Date;
+    updated?: Date;
     autoshare?: boolean;
 }
 

@@ -2,6 +2,7 @@ import {Injectable} from "@angular/core";
 import * as crypto from "crypto-js";
 import {StorageService} from "../storage.service";
 import {Guid} from "guid-typescript";
+import {InfectedKey, InfectedKeyControllerService} from "../../sdk";
 
 @Injectable()
 export class KeyManagerService {
@@ -13,7 +14,8 @@ export class KeyManagerService {
 
     public static SK_KEY = 'sk-key';
 
-    public constructor(protected storageService: StorageService) {
+    public constructor(protected storageService: StorageService,
+                       protected infectedKeyControllerService: InfectedKeyControllerService) {
 
         this.storageService.getItem(KeyManagerService.SK_KEY).subscribe(data => {
             if (data != null) {
@@ -71,6 +73,28 @@ export class KeyManagerService {
 
         return returnValue;
     }
+
+    public uploadKeyToServer() {
+
+        let infectedKey: InfectedKey = new class implements InfectedKey {
+            [key: string]: object | any;
+
+            created: Date;
+            id: string;
+            infectionDate: Date;
+            key: string;
+            keyDate: Date;
+        };
+
+        infectedKey.key = this.initialSK;
+        infectedKey.keyDate = this.initialDate;
+
+        this.infectedKeyControllerService.infectedKeyControllerCreate(infectedKey).subscribe(result => {
+            //todo
+        });
+
+    }
+
 }
 
 export class EncryptedKey {

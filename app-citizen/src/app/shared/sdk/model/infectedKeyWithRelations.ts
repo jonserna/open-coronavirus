@@ -20,8 +20,8 @@ export interface InfectedKeyWithRelations {
 
     id?: string;
     key: string;
-    keyDate: Date;
-    infectionDate?: Date;
-    created?: Date;
+    keyDate: string;
+    infectionDate?: string;
+    created?: string;
 }
 

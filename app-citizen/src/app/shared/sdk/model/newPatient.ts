@@ -22,7 +22,7 @@ export interface NewPatient {
     lastName?: string;
     documentNumber: string;
     healthInsuranceCardNumber?: string;
-    birthday: Date;
+    birthday: string;
     age?: number;
     gender?: number;
     street?: string;
@@ -30,11 +30,12 @@ export interface NewPatient {
     postalCode: string;
     email?: string;
     status?: number;
+    statusDate?: string;
     phone: string;
     serviceAdvertisementUUID?: string;
     appId?: string;
-    created?: Date;
-    updated?: Date;
+    created?: string;
+    updated?: string;
     autoshare?: boolean;
 }
 

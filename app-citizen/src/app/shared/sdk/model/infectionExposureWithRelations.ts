@@ -11,15 +11,18 @@
  */
 
 
-export interface TestAppointment { 
+/**
+ * (Schema options: { includeRelations: true })
+ */
+export interface InfectionExposureWithRelations { 
   [key: string]: object | any;
 
 
     id?: string;
-    created?: string;
-    appointmentDate?: string;
-    type?: number;
     patientId: string;
-    healthCenterId?: string;
+    rssi: number;
+    timestampFrom: string;
+    timestampTo: string;
+    anonymizedInfectedUuid: string;
 }
 

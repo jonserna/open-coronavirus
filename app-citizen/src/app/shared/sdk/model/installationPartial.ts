@@ -22,6 +22,6 @@ export interface InstallationPartial {
     deviceId?: string;
     pushRegistrationId?: string;
     patientId?: string;
-    created?: Date;
+    created?: string;
 }
 

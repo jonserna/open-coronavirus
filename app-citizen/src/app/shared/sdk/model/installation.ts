@@ -19,6 +19,6 @@ export interface Installation {
     deviceId: string;
     pushRegistrationId?: string;
     patientId: string;
-    created?: Date;
+    created?: string;
 }
 

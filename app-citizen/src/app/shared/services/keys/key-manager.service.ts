@@ -3,6 +3,7 @@ import * as crypto from "crypto-js";
 import {StorageService} from "../storage.service";
 import {Guid} from "guid-typescript";
 import {InfectedKey, InfectedKeyControllerService} from "../../sdk";
+import {PatientService} from "../patient.service";
 
 @Injectable()
 export class KeyManagerService {
@@ -15,6 +16,7 @@ export class KeyManagerService {
     public static SK_KEY = 'sk-key';
 
     public constructor(protected storageService: StorageService,
+                       protected patientService: PatientService,
                        protected infectedKeyControllerService: InfectedKeyControllerService) {
 
         this.storageService.getItem(KeyManagerService.SK_KEY).subscribe(data => {
@@ -84,15 +86,16 @@ export class KeyManagerService {
         let infectedKey: InfectedKey = new class implements InfectedKey {
             [key: string]: object | any;
 
-            created: Date;
+            created: string;
             id: string;
-            infectionDate: Date;
+            infectionDate: string;
             key: string;
-            keyDate: Date;
+            keyDate: string;
         };
 
         infectedKey.key = this.initialSK;
         infectedKey.keyDate = this.initialDate;
+        infectedKey.infectionDate = this.patientService.patient.statusDate;
 
         this.infectedKeyControllerService.infectedKeyControllerCreate(infectedKey).subscribe(result => {
             //todo

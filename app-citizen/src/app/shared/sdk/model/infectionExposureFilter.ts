@@ -9,17 +9,14 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { InfectionExposureFields } from './infectionExposureFields';
 
 
-export interface TestAppointment { 
-  [key: string]: object | any;
-
-
-    id?: string;
-    created?: string;
-    appointmentDate?: string;
-    type?: number;
-    patientId: string;
-    healthCenterId?: string;
+export interface InfectionExposureFilter { 
+    offset?: number;
+    limit?: number;
+    skip?: number;
+    order?: Array<string>;
+    fields?: InfectionExposureFields;
 }
 

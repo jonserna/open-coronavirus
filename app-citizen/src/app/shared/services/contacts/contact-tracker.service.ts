@@ -289,6 +289,13 @@ export class ContactTrackerService {
 
     }
 
+    async deleteContacts(contactsToDelete: any[]) {
+        contactsToDelete.forEach(async (contactToDelete: Contact) => {
+            await this.db.executeSql('DELETE FROM contacts where id = ?', [contactToDelete.id]);
+        });
+        this.refreshContactsCount();
+    }
+
     async showUploadContactRequestModal() {
         const modalUploadContacts = await this.modalController.create(
             {

@@ -28,6 +28,7 @@ export interface PatientFields {
     postalCode?: boolean;
     email?: boolean;
     status?: boolean;
+    statusDate?: boolean;
     phone?: boolean;
     serviceAdvertisementUUID?: boolean;
     appId?: boolean;

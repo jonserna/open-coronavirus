@@ -11,15 +11,15 @@
  */
 
 
-export interface TestAppointment { 
+export interface InfectionExposure { 
   [key: string]: object | any;
 
 
     id?: string;
-    created?: string;
-    appointmentDate?: string;
-    type?: number;
     patientId: string;
-    healthCenterId?: string;
+    rssi: number;
+    timestampFrom: string;
+    timestampTo: string;
+    anonymizedInfectedUuid: string;
 }
 

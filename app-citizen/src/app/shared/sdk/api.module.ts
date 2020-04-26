@@ -7,6 +7,7 @@ import { ContactControllerService } from './api/contactController.service';
 import { GeolocationControllerService } from './api/geolocationController.service';
 import { HealthCenterControllerService } from './api/healthCenterController.service';
 import { InfectedKeyControllerService } from './api/infectedKeyController.service';
+import { InfectionExposureControllerService } from './api/infectionExposureController.service';
 import { InstallationControllerService } from './api/installationController.service';
 import { LeaveRequestControllerService } from './api/leaveRequestController.service';
 import { MeControllerService } from './api/meController.service';
@@ -21,20 +22,7 @@ import { TestResultControllerService } from './api/testResultController.service'
   imports:      [],
   declarations: [],
   exports:      [],
-  providers: [
-    ContactControllerService,
-    GeolocationControllerService,
-    HealthCenterControllerService,
-    InfectedKeyControllerService,
-    InstallationControllerService,
-    LeaveRequestControllerService,
-    MeControllerService,
-    MinVersionControllerService,
-    PatientControllerService,
-    PingControllerService,
-    TestAppointmentControllerService,
-    TestQuestionControllerService,
-    TestResultControllerService ]
+  providers: []
 })
 export class ApiModule {
     public static forRoot(configurationFactory: () => Configuration): ModuleWithProviders {

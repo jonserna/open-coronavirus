@@ -11,3 +11,4 @@ export * from './contact.controller';
 export * from './installation.controller';
 export * from './min-version.controller';
 export * from './infected-key.controller';
+export * from './infection-exposure.controller';

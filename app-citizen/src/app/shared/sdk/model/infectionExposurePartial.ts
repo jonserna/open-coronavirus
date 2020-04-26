@@ -11,15 +11,18 @@
  */
 
 
-export interface TestAppointment { 
+/**
+ * (Schema options: { partial: true })
+ */
+export interface InfectionExposurePartial { 
   [key: string]: object | any;
 
 
     id?: string;
-    created?: string;
-    appointmentDate?: string;
-    type?: number;
-    patientId: string;
-    healthCenterId?: string;
+    patientId?: string;
+    rssi?: number;
+    timestampFrom?: string;
+    timestampTo?: string;
+    anonymizedInfectedUuid?: string;
 }
 

@@ -19,8 +19,8 @@ export interface NewInfectedKey {
 
 
     key: string;
-    keyDate: Date;
-    infectionDate?: Date;
-    created?: Date;
+    keyDate: string;
+    infectionDate?: string;
+    created?: string;
 }
 

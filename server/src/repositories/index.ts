@@ -10,3 +10,4 @@ export * from './contact.repository';
 export * from './installation.repository';
 export * from './min-version.repository';
 export * from './infected-key.repository';
+export * from './infection-exposure.repository';

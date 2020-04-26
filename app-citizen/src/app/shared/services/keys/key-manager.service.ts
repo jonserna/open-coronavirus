@@ -58,10 +58,11 @@ export class KeyManagerService {
     public generateKey(initialKey: string, initialTimestamp: number, currentTimestamp: number) {
 
         const diffDays = this.getDiffDays(initialTimestamp, currentTimestamp);
+        let returnValue = initialKey.toString();
         for (let i = 0; i < diffDays; i++) {
-            initialKey = this.generateNewKey(initialKey);
+            returnValue = this.generateNewKey(returnValue);
         }
-        return initialKey;
+        return returnValue;
 
     }
 

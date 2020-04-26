@@ -45,7 +45,7 @@ export class InstallationService {
         let installation: InstallationWithRelations = new class implements InstallationWithRelations {
             [key: string]: object | any;
 
-            created: string;
+            created: Date;
             deviceId: string;
             id: string;
             patientId: string;

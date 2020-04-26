@@ -213,7 +213,7 @@ export class ContactTrackerService {
     }
 
 
-    async getContactEntries(limit = 100, offset= 0) {
+    public async getContactEntries(limit = 100, offset= 0) {
 
         return new Promise((resolve, reject) => {
             if(this.db != null) {

@@ -40,7 +40,7 @@ export class PatientInfoFormComponent implements OnInit, OnDestroy, AfterViewIni
         gender: number;
         healthInsuranceCardNumber: string;
         id: string;
-        birthday: string;
+        birthday: Date;
         phone: string;
         postalCode: string;
         street: string;
@@ -144,7 +144,7 @@ export class PatientInfoFormComponent implements OnInit, OnDestroy, AfterViewIni
         this.subscriptions.push(this.patientInfoForm.get('birthday').valueChanges
             .subscribe((value: string) => {
                 value = value.trim();
-                this.patient.birthday = value;
+                this.patient.birthday = new Date(value);
                 this.onChange.next(this.patient);
             }));
 

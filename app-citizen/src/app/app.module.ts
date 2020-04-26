@@ -41,6 +41,8 @@ import { TestQuestionService } from './shared/services/test-question.service';
 import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 import {AndroidPermissions} from "@ionic-native/android-permissions/ngx";
 import {KeyManagerService} from "./shared/services/keys/key-manager.service";
+import {KeyMatcherService} from "./shared/services/keys/key-matcher.service";
+import {BackgroundFetchService} from "./shared/services/background-fetch.service";
 
 @NgModule({
     declarations: [AppComponent, MainComponent],
@@ -69,6 +71,8 @@ import {KeyManagerService} from "./shared/services/keys/key-manager.service";
         SQLite,
         ShareService,
         KeyManagerService,
+        KeyMatcherService,
+        BackgroundFetchService,
         Device,
         ContactTrackerService,
         BluetoothTrackingService,

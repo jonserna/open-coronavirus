@@ -74,6 +74,10 @@ export class KeyManagerService {
         return returnValue;
     }
 
+    public decrypt(key: string, encriptedData: string) {
+        return crypto.AES.decrypt(encriptedData, key).toString();
+    }
+
     public uploadKeyToServer() {
 
         let infectedKey: InfectedKey = new class implements InfectedKey {

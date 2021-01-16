@@ -1,15 +1,20 @@
-import { Component, Inject, OnDestroy, ViewEncapsulation } from '@angular/core';
-import { Router } from '@angular/router';
-import { ShareService } from '../../shared/services/share.service';
-import { PatientService } from '../../shared/services/patient.service';
-import { MenuController } from '@ionic/angular';
-import { LeaveReasonEnum, LeaveRequestService } from '../../shared/services/leave-request.service';
-import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
-import { TestAppointmentService } from "../../shared/services/test-appointment.service";
-import { Subscription } from "rxjs";
-import { AppointmentType, PatientStatus } from "../../../../../server/src/common/utils/enums";
-import { LeaveRequest } from 'src/app/shared/sdk';
-import { ContactTrackerService } from 'src/app/shared/services/contacts/contact-tracker.service';
+import {ApplicationRef, Component, ElementRef, Inject, OnDestroy, ViewChild, ViewEncapsulation} from '@angular/core';
+import {Router} from '@angular/router';
+import {ShareService} from '../../shared/services/share.service';
+import {PatientService} from '../../shared/services/patient.service';
+import {AlertController, MenuController, Platform} from '@ionic/angular';
+import {LeaveReasonEnum, LeaveRequestService} from '../../shared/services/leave-request.service';
+import {InAppBrowser} from '@ionic-native/in-app-browser/ngx';
+import {TestAppointmentService} from "../../shared/services/test-appointment.service";
+import {Subscription} from "rxjs";
+import {AppointmentType, PatientStatus} from "../../../../../server/src/common/utils/enums";
+import {LeaveRequest} from 'src/app/shared/sdk';
+import {ContactTrackerService} from 'src/app/shared/services/contacts/contact-tracker.service';
+import {TracingService} from "../../shared/services/tracing.service";
+import {PermissionsService} from '../../shared/services/permissions.service';
+import {BluetoothTrackingService} from "../../shared/services/tracking/bluetooth-tracking.service";
+import {OpenNativeSettings} from '@ionic-native/open-native-settings/ngx';
+import {KeyManagerService} from "../../shared/services/keys/key-manager.service";
 
 @Component({
     selector: 'home',
@@ -34,6 +39,8 @@ export class HomeComponent implements OnDestroy {
     public appointmentDescriptionLine1: string;
     public appointmentDescriptionLine2: string;
 
+    public qrCodeId: string;
+
     public showSendContactInformationMenu = false;
     public contactsCount = null;
 
@@ -42,18 +49,30 @@ export class HomeComponent implements OnDestroy {
     public patientName: string;
     public leaveRequest: LeaveRequest;
 
+    public enabledBluetooth: boolean;
+
+    @ViewChild('footer') footer: ElementRef;
+
     public STATUS = PatientStatus;
 
     constructor(
         protected router: Router,
         public patientService: PatientService,
+        protected keyManager: KeyManagerService,
         protected leaveRequestService: LeaveRequestService,
         protected testAppointmentService: TestAppointmentService,
+        protected bluetoothTrackingService: BluetoothTrackingService,
+        protected alertController: AlertController,
+        protected tracingService: TracingService,
+        protected openNativeSettings: OpenNativeSettings,
         protected menu: MenuController,
+        private appRef: ApplicationRef,
+        protected platform: Platform,
         @Inject('settings') public settings,
         protected inAppBrowser: InAppBrowser,
         protected shareService: ShareService,
-        protected contactTrackerService: ContactTrackerService
+        protected contactTrackerService: ContactTrackerService,
+        protected permissionsService: PermissionsService
     ) {
         this.subscriptions.push(this.testAppointmentService.testAppointmentLoaded$.subscribe(loaded => {
             if (loaded) {
@@ -84,10 +103,16 @@ export class HomeComponent implements OnDestroy {
             }
         }));
 
+        this.permissionsService.bluetoothPoweredOn$.subscribe(poweredOn => {
+            this.enabledBluetooth = poweredOn;
+            console.log("[HomeComponent] Changed enabledBluetooth value to " + poweredOn);
+            this.appRef.tick();
+        });
+
         this.subscriptions.push(this.patientService.patientDataChanged$.subscribe(patientLoaded => {
             if (patientLoaded) {
                 this.patientName = this.patientService.patient.firstName;
-                if (this.patientService.patient.status == PatientStatus.INFECTED && this.contactsCount > 0) {
+                if (this.patientService.patient.status == PatientStatus.INFECTED && !this.tracingService.autoShareActivated()) {
                     this.showSendContactInformationMenu = true;
                 }
                 else {
@@ -96,11 +121,13 @@ export class HomeComponent implements OnDestroy {
             }
         }));
 
+        this.refreshQrCode();
+
         this.subscriptions.push(this.patientService.patientLoaded$.subscribe(loaded => {
             if (loaded) {
                 this.subscriptions.push(this.contactTrackerService.contactsCount$.subscribe(contactsCount => {
                     this.contactsCount = contactsCount;
-                    if (contactsCount > 0 && this.patientService.patient.status == PatientStatus.INFECTED) {
+                    if (this.patientService.patient.status == PatientStatus.INFECTED && !this.tracingService.autoShareActivated()) {
                         this.showSendContactInformationMenu = true;
                     }
                     else {
@@ -126,8 +153,26 @@ export class HomeComponent implements OnDestroy {
             }
         });
 
-
         this.calculateNumItems();
+
+        this.platform.resume.subscribe(() => {
+            this.appRef.tick();
+            this.qrCodeId = this.keyManager.generateEncryptedKey().encryptedData;
+        });
+
+    }
+
+    /**
+     * This method refresh the QR code every 5 seconds.
+     * It get a new ephiID from the keyManager and set it to
+     * the QR code
+     *
+     */
+    public refreshQrCode() {
+        this.qrCodeId = this.keyManager.generateEncryptedKey().encryptedData;
+        setTimeout(() => {
+            this.refreshQrCode();
+        }, 5000);
     }
 
     private calculateNumItems() {
@@ -205,10 +250,10 @@ export class HomeComponent implements OnDestroy {
             case PatientStatus.IMMUNE:
                 return $localize`:@@statusImune:Inmune`;
             case PatientStatus.INFECTED:
-                return $localize`:@@statusInfected:Positivo`;
+                return $localize`:@@statusInfected:Infección Aguda`;
 
             case PatientStatus.INFECTION_SUSPECTED:
-                return $localize`:@@statusQuarantine:Cuarentena obligatoria`;
+                return $localize`:@@statusQuarantine:Cuarentena`;
 
             case PatientStatus.UNINFECTED:
                 return $localize`:@@statusNoInfected:Negativo`;
@@ -278,11 +323,36 @@ export class HomeComponent implements OnDestroy {
         return str;
     }
 
-    public uploadContactsAndShowThanksModal() {
-        this.contactTrackerService.uploadContactsAndShowThanksModal();
+    async clickEnabledBluetooth() {
+
+        let alert = await this.alertController.create({
+            header: 'El Bluetooth está desactivado',
+            message: 'Para ayudar en la lucha contra el COVID-19 es necesario que active el bluetooth y que la APP tenga permisos para usarlo. Desea revisar la configuración de la APP?',
+            buttons: [
+                {
+                    text: 'No',
+                    role: 'cancel',
+                    handler: () => {
+                        //nothing to do...
+                    }
+                },
+                {
+                    text: 'Si',
+                    handler: () => {
+                        this.openNativeSettings.open("application_details");
+                    }
+                }
+            ]
+        });
+
+        await alert.present();
     }
 
-    public valeriaDemoConfirmarContact() {
-        this.contactTrackerService.showUploadContactRequestModal();
+    public uploadContactsAndShowThanksModal() {
+        this.tracingService.trackInfectionToServer();
+    }
+
+    public valeriaDemoUploadContactRequestModal() {
+        this.tracingService.showUploadContactRequestModal();
     }
 }

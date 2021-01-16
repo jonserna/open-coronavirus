@@ -1,6 +1,7 @@
 <img src="https://github.com/open-coronavirus/open-coronavirus/blob/master/screenshots/logo-opencoronavirus.png?raw=true" width="600" />
 
 
+
 # ¿Qué es Open Coronavirus?
 
 La disponibilidad de una vacuna eficaz pueda demorarse de manera indefinida hasta
@@ -16,14 +17,14 @@ calientes, minimizando así la cuarentena general de la población, reduciendo l
 sobrecarga de los sistemas sanitarios y facilitando al mismo tiempo la reanudación
 progresiva de la actividad cotidiana en el menor tiempo posible.
 
-El sistema contará con 3 aplicativos:
+El sistema contará con varios aplicativos:
 
 - **App Ciudadano**. Aplicación mobile para la colaboración ciudadana y control de la propagación del
 SARS-CoV-2.
 
     Desde la aplicación **se solicitará un test diagnóstico y ver los resultados del mismo.** Servirá como identificación del ciudadano **mediante códigos QR** que determinará este estado.
 
-    Se almacenará en el dispositivo de cada ciudadano los **cruces con otros ciudadanos de forma anónima** a partir de la información obtenida por **Bluetooth Low Energy**.
+    Se almacenará en el dispositivo de cada ciudadano (sistema descentralizado) con **quién has estado cerca de forma anónima** a partir de la información obtenida por **Bluetooth Low Energy**.
 
     De esta forma controlar posibles contagios y cercar el ámbito de acción del SARS-CoV-2 desde las autoridades sanitarias.
 
@@ -32,19 +33,23 @@ SARS-CoV-2.
 - **Software de control datos (próximamente)** donde las autoridades sanitarias y de control
 epidemiológico podrán consultar y detectar posibles contagios del SARS-CoV-2.
 
-- **App Autoridades.** Aplicación mobile para que las autoridades pertinentes puedan leer los QR de
+- **App Autoridades (beta).** Aplicación mobile para que las autoridades pertinentes puedan leer los QR de
 identificación del ciudadano en los entornos que se decidan así como monitorizar
 su movilidad.
 
-| | 
-|:--:| 
-| *Ejemplo de las 3 aplicaciones para distintos tipos de usuarios* |
+   _Aplicación secundaria, no imprescindible para el control de la propagación del SARS-CoV-2._ 
+
+
+- **App Sanitarios (beta).** Aplicación mobile para que los sanitarios puedan introducir los resultados de los tests diagnósticos.
+
+   _Aplicación secundaria, no imprescindible para el control de la propagación del SARS-CoV-2._
 
 
 > **Importante** Un equipo de expertos en investigación médica y bioética de la **Universidad de Oxford** explica la necesidad de tener una app de estas características:
 http://www.ox.ac.uk/news/2020-03-17-infectious-disease-experts-provide-evidence-coronavirus-mobile-app-instant-contact
 
 
+Web oficial: [https://opencoronavirus.app/](https://opencoronavirus.app/)
 
 Para más información puedes consultar la [wiki del proyecto](https://github.com/open-coronavirus/open-coronavirus/wiki):
 
@@ -79,28 +84,46 @@ Sé responsable. Entre todos, ¡venceremos al virus!
 ## ¿Cómo funciona el sistema de seguimiento de contagios basado en Bluetooth Low Energy?
 
 La APP utiliza la tecnología **Bluetooth Low Energy** mediante la cual se hace seguimiento de posibles contagios de COVID-19.
+
 Cada ciudadano tiene la aplicación instalada y con el bluetooth conectado.
 
 El funcionamiento del sistema **Bluetooth LE** es el siguiente:
 
-1. Cuando **dos ciudadanos estén cerca físicamente**, sus teléfonos intercambiarán unos **códigos identificadores anónimos** mediante Bluetooth LE.
-Cada móvil guarda en su memoria del teléfono estos cruces entre ciudadanos.
+1. Cuando **dos personas estén cerca físicamente**, sus teléfonos intercambiarán unos **códigos identificadores anónimos** mediante Bluetooth LE.
 
-    El nivel de cercanía se calcula a partir de la intensidad de la señal de bluetooth.
-También se almacena el tiempo en el que has estado cerca de ese dispositivo para conocer la exposición al COVID-19 en caso de que el ciudadano padeciera la enfermedad.
+   Cada móvil guarda en su memoria del teléfono estos cruces entre ciudadanos.
+
+   El nivel de cercanía se calcula a partir de la intensidad de la señal de bluetooth.
+
+    También se almacena el tiempo en el que has estado cerca de ese dispositivo para conocer la exposición al COVID-19 en caso de que el ciudadano padeciera la enfermedad.
 
     **El almacenamiento de esta información es por tiempo limitado** protegiendo aún más la privacidad del ciudadano.
     Ese tiempo es configurable en la herramienta pero **se recomienda entre 14 y 37 días** ya que es el tiempo en el que un portador diagnosticado podría haber infectado a otro individuo de COVID-19.
 
-2. **En el caso de que un ciudadano dé positivo por COVID-19**, la aplicación actualizará su estado QR a rojo y analizará los posibles cruces de cercanía con otros ciudadanos.
+2. **En el caso de que una persona dé positivo por COVID-19**, la aplicación actualizará su estado QR a rojo y analizará con quién ha estado cerca.
 
-    El sistema **subirá al servidor estos cruces de ciudadanos en los cuales se haya podido producir un posible contagio** y a estos ciudadanos les notificará vía push para que sean conscientes del riesgo y/o vuelvan ha realizarse un test diagnóstico.
+   La persona puede decidir si **autoriza a notificar de forma anónima** a las personas con las que has estado cerca.
 
-> Para ello es fundamental que el sistema sanitario oficial de la administración o gobierno esté correctamente integrado con la aplicación.
+   El sistema subirá al servidor de forma anónima (en caso de ser autorizado) su clave y será enviada a las demás personas.
+
+3. La app del **resto de personas descarga constantemente las claves autorizadas** que han dado positivo de COVID-19 para comprobar si han estado expuestos al virus. Este proceso se hace de **forma anónima en su mismo móvil**.
+
+   La evaluación del riesgo se realiza según el tiempo y cercanía de exposición al COVID-19 según la recomendación europea.
+
+   El servidor **sólo guarda claves anónimas** que han dado positivo de COVID-19 **sin ninguna relación** con las personas que han dado positivo de COVID-19.
+
+   El servidor permite guardar los cambios de estado de una persona que se encuentra en riesgo alto.
+
+   El **servidor nunca sabe nada**: ni la ubicación de las personas ni con quien han estado cerca.
+   
+  
+> Para ello es fundamental que el sistema sanitario oficial de la administración o gobierno esté correctamente integrado con la aplicación. Permite la **optimización de a quién se le debe hacer test diagnóstico y control de la pandemia.**
 
 | ![Bluetooth LE flow](https://raw.githubusercontent.com/open-coronavirus/open-coronavirus/master/screenshots/bluetooth-description-1-es.png) | 
 |:--:| 
 | *Sistema de seguimiento de contagios basado en Bluetooth Low Energy* |
+| ![Bluetooth LE flow](https://raw.githubusercontent.com/open-coronavirus/open-coronavirus/master/screenshots/bluetooth-description-2c-es.png) | 
+
 
 ---
 
@@ -121,6 +144,9 @@ Los datos que se recaben deberán gestionarse de conformidad con la ley en cuant
 Así mismo, pese a que esta app solicita al usuario su consentimiento, también el RGPD contiene excepciones a la necesidad de recabar el consentimiento previo al tratamiento de datos, en el caso de epidemia o de protección de la salud de las personas en base al interés general, que es la situación en la que nos encontramos. El escenario en el que se centra este informe es el de que las autoridades sanitarias autonómicas adoptan medidas extraordinarias para la protección de la salud pública, pues es la única legitimada para adoptar este tipo de medidas.
 
 
+> El proyecto sigue las **recomendaciones de la Comisión Europea** # [Mobile applications to support contact tracing in the EU’s fight against COVID-19
+Common EU Toolbox for Member States](https://ec.europa.eu/health/sites/health/files/ehealth/docs/covid-19_apps_en.pdf). Puedes ver un resumen en el pundo de la wiki que tratamos sobre: [02.-Consideraciones-legales](https://github.com/open-coronavirus/open-coronavirus/wiki/02.-Consideraciones-legales).
+
 > **Según la AEPD** Para cumplir las decisiones sobre la pandemia de coronavirus que adopten las autoridades competentes, en particular las sanitarias, la normativa de protección de datos no debería utilizarse para obstaculizar o limitar la efectividad de las medidas que adopten dichas autoridades, en la lucha contra la pandemia.
 > La normativa de protección de datos permite adoptar las medidas que sean necesarias para salvaguardar los intereses vitales de las personas físicas, el interés público esencial en el ámbito de la salud, la realización de diagnósticos médicos, o el cumplimiento de obligaciones legales en el ámbito laboral, incluido el tratamiento de datos de salud sin necesidad de contar con el consentimiento explícito el afectado.
 > En todo caso, el tratamiento de estos datos debe observar los principios establecidos en el RGPD, en particular los de minimización, limitación de la finalidad y minimización de la conservación.
@@ -136,6 +162,8 @@ Open Coronavirus se está diseñando de acuerdo con los siguientes principios:
 - **Uso de un enfoque de código abierto** para crear una aplicación que fomente la confianza en las capacidades de protección de la privacidad de la aplicación, ya que los expertos y los medios independientes pueden acceder y evaluar el código fuente.
 
 Los principios descritos anteriormente, aunque son técnicamente compatibles con las regulaciones actuales de privacidad de datos, están inspirados en Apps Gone Rogue: <a href="https://arxiv.org/pdf/2003.08567.pdf" target="_blank">Mantener la privacidad personal en una epidemia </a>
+
+
 
 
 ## Estructura del Proyecto
@@ -217,7 +245,7 @@ Simplemente determina la IP de red del host donde ionic está ejecutando el serv
 - Conferencia: **Open Coronavirus. Digital Solution for monitoring, diagnosing and containing SARS-COV-2 infection** por Aurelia Bustos en el 1º Congreso Anban de Inteligencia Artificial y Big Data contra el COVID-19
     https://www.youtube.com/watch?v=qLDpcljJRyM&feature=youtu.b
     
-- Transparencias oficiales: https://raw.githubusercontent.com/open-coronavirus/open-coronavirus/master/info/Open-Coronavirus.pdf
+- Transparencias oficiales: https://raw.githubusercontent.com/open-coronavirus/open-coronavirus/master/info/Open-Coronavirus-es.pdf
 
 
 ## Licencia

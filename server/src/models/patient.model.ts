@@ -13,45 +13,45 @@ export class Patient extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  firstName: string;
+  firstName?: string;
 
   @property({
     type: 'string',
     required: false,
   })
-  lastName: string;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
-  documentNumber: string;
+  lastName?: string;
 
   @property({
     type: 'string',
     required: false,
   })
-  healthInsuranceCardNumber: string;
+  documentNumber?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  healthInsuranceCardNumber?: string;
 
   @property({
     type: 'date',
-    required: true,
+    required: false,
   })
-  birthday: Date;
+  birthday?: Date;
 
   @property({
     type: 'number',
     required: false,
   })
-  age: number;
+  age?: number;
 
   @property({
     type: 'number',
     required: false,
   })
-  gender: number;
+  gender?: number;
 
   @property({
     type: 'string',
@@ -63,19 +63,19 @@ export class Patient extends Entity {
     type: 'string',
     required: false,
   })
-  apartment: string;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
-  postalCode: string;
+  apartment?: string;
 
   @property({
     type: 'string',
     required: false,
   })
-  email: string;
+  postalCode?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  email?: string;
 
   /**
    * 1: INITIAL
@@ -86,15 +86,21 @@ export class Patient extends Entity {
   @property({
     type: 'number',
     required: false,
-    default: 1
+    default: 0
   })
   status?: number;
 
   @property({
-    type: 'string',
-    required: true,
+    type: 'date',
+    required: false,
   })
-  phone: string;
+  statusDate?: Date;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  phone?: string;
 
   @property({
     type: 'string',
@@ -139,6 +145,18 @@ export class Patient extends Entity {
   constructor(data?: Partial<Patient>) {
     super(data);
   }
+
+  public copy(patient: Patient) {
+    this.firstName = patient.firstName;
+    this.lastName = patient.lastName;
+    this.documentNumber = patient.documentNumber;
+    this.healthInsuranceCardNumber = patient.healthInsuranceCardNumber;
+    this.street = patient.street;
+    this.postalCode = patient.postalCode;
+    this.email = patient.email;
+    this.phone = patient.phone;
+  }
+
 }
 
 export interface PatientRelations {

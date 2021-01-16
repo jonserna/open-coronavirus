@@ -18,8 +18,9 @@ export const settings = {
     requestTestUrl: '',
     autoTestUrl: '',
     followingUpUrl: '',
-    appVersion: '1.0.0',
+    appVersion: '${VERSION_NUMBER}',
     techSupportPhone: '555 555 5555',
+    useDecentralizedProtocol: true,
     shareApp: {
         text: 'Compartir App para luchar juntos'
     },
@@ -42,6 +43,11 @@ export const settings = {
         urlAppStore: 'https://itunes.apple.com/es/app/coronaapp/idxxxxxx',
         urlGooglePlay: 'https://play.google.com/store/apps/details?id=xxxx.coronaapp.xxx'
     },
-    autoshare: false
+    autoshare: false,
+    identifierQR: true,
+    register: {
+        moduleHome : true,
+        moduleContact : true
+    }
 
 };

@@ -30,29 +30,26 @@ export class PermissionsModalComponent implements OnInit {
 
     ngOnInit() {
         this.activatedRoute.paramMap.subscribe(params => {
-          this.permissionsService.hasPermission(params.get('type')).then(hasPermission => {
-            //ask just for missing permissions
-            console.log(params.get('type'));
-            if(!hasPermission) {
-              this.type = params.get('type');
-            }
-            else {
-              //bluetooth also needs location service:
-              if(params.get('type') == 'bluetooth' && this.platform.is('android')) {
-                  this.permissionsService.hasPermission('coarse-location').then(hasPermission => {
-                      if(!hasPermission) {
-                          this.type = 'coarse-location';
-                      }
-                      else {
-                          this.dismissModal();
-                      }
-                  });
-              }
-              else {
-                  this.dismissModal();
-              }
-            }
-          })
+            this.permissionsService.hasPermission(params.get('type')).then(hasPermission => {
+                //ask just for missing permissions
+                console.log(params.get('type'));
+                if (!hasPermission) {
+                    //bluetooth on android also needs location service:
+                    if (params.get('type') == 'bluetooth' && this.platform.is('android')) {
+                        this.permissionsService.hasPermission('coarse-location').then(hasPermission => {
+                            if (!hasPermission) {
+                                this.type = 'coarse-location';
+                            } else {
+                                this.type = 'bluetooth';
+                            }
+                        });
+                    } else {
+                        this.type = params.get('type');
+                    }
+                } else {
+                    this.dismissModal();
+                }
+            })
         });
     }
 
@@ -61,9 +58,14 @@ export class PermissionsModalComponent implements OnInit {
     }
 
     activatePermission() {
-      this.permissionsService.requestPermission(this.type).then(result => {
-        this.dismissModal();
-      })
+        this.permissionsService.requestPermission(this.type).then(result => {
+            this.dismissModal();
+        })
+    }
+
+    isIOS() {
+        return (this.platform.is('ios'));
+
     }
 
 }

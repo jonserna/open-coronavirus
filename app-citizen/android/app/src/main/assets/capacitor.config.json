@@ -4,14 +4,28 @@
   "bundledWebRuntime": false,
   "npmClient": "npm",
   "webDir": "www",
+  "ios": {
+    "cordovaSwiftVersion": "4.2"
+  },
   "cordova": {
     "preferences": {
-      "cordova.plugins.diagnostic.modules": "LOCATION BLUETOOTH WIFI CAMERA NOTIFICATIONS MICROPHONE CONTACTS CALENDAR REMINDERS MOTION NFC EXTERNAL_STORAGE"
+      "cordova.plugins.diagnostic.modules": "LOCATION BLUETOOTH WIFI CAMERA NOTIFICATIONS MICROPHONE CONTACTS CALENDAR REMINDERS MOTION NFC EXTERNAL_STORAGE",
+      "SplashMaintainAspectRatio": "true",
+      "FadeSplashScreenDuration": "300",
+      "SplashShowOnlyFirstTime": "false",
+      "SplashScreen": "screen"
     }
   },
   "plugins": {
     "PushNotifications": {
-      "presentationOptions": ["badge", "sound", "alert"]
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    },
+    "SplashScreen": {
+      "androidScaleType": "CENTER_CROP"
     }
   }
 }

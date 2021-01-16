@@ -1,6 +1,5 @@
 import PushNotifications from 'node-pushnotifications';
 import {join} from "path";
-import * as fs from "fs";
 import {repository} from "@loopback/repository";
 import {InstallationRepository} from "../repositories";
 
@@ -54,25 +53,28 @@ export class PushNotificationService {
             }
         };
 
-        this.installationRepository.findOne(filter, {strictObjectIDCoercion: true}).then(installation => {
+        this.installationRepository.find(filter, {strictObjectIDCoercion: true}).then(installations => {
 
-            if(installation != null) {
-                if(!!installation.pushRegistrationId) {
-                    this.sendNotification([installation.pushRegistrationId], title, body);
-                }
-                else {
-                    console.error("No push registration info found for patient " + patientId + ", installation: " + installation.id);
-                }
+            if(installations != null && installations.length > 0) {
+                let pushRegistrationIds = new Array<string>();
+                installations.forEach(installation => {
+                    if (installation != null && !!installation.pushRegistrationId) {
+                        pushRegistrationIds.push(installation.pushRegistrationId);
+                    } else {
+                        console.error("No push registration info found for patient " + patientId + ", installation: " + installation.id + ". No push will be sent");
+                    }
+                });
+                this.sendNotification(pushRegistrationIds, title, body);
             }
             else {
-                console.error("No installation info found for patient " + patientId);
+                console.error("No installation info found for patient " + patientId + ". No push will be sent");
             }
 
         });
     }
 
 
-    public sendNotification(deviceIds: any[], title: string, body: string, badge = 0) {
+    public sendNotification(deviceIds: any[], title: string, body: string, badge = 1) {
         const data = {
             title: title, // REQUIRED for Android
             topic: 'com.opencoronavirus', // REQUIRED for iOS (apn and gcm)
@@ -105,7 +107,7 @@ export class PushNotificationService {
             encoding: '', // apn
             badge: badge, // gcm for ios, apn
             sound: 'default', // gcm, apn
-            android_channel_id: 'opencoronavirus', // gcm - Android Channel ID
+            android_channel_id: 'fcm_default_channel', // gcm - Android Channel ID
             notificationCount: badge, // fcm for android. badge can be used for both fcm and apn
             alert: { // apn, will take precedence over title and body
                 title: title,

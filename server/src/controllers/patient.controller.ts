@@ -1,4 +1,4 @@
-import { Count, CountSchema, Filter, repository, Where, } from '@loopback/repository';
+import {Count, CountSchema, Filter, repository, Where,} from '@loopback/repository';
 import {
   del,
   get,
@@ -13,14 +13,13 @@ import {
   requestBody,
 } from '@loopback/rest';
 
-import { Patient } from '../models';
-import { PatientRepository } from '../repositories';
-import { BluetoothUuidGenerator } from "../common/utils/bluetooth-uuid-generator";
-import { authenticate } from "@loopback/authentication";
-import { authorize } from "@loopback/authorization";
+import {Patient} from '../models';
+import {PatientRepository} from '../repositories';
+import {BluetoothUuidGenerator} from "../common/utils/bluetooth-uuid-generator";
+import {authenticate} from "@loopback/authentication";
+import {authorize} from "@loopback/authorization";
 import {service} from "@loopback/core";
 import {PushNotificationService} from "../services/pushnotification.service";
-import {PatientStatus} from "../common/utils/enums";
 import {PatientService} from "../services/patient.service";
 import {UserValidatorService} from "../services/user-validator.service";
 
@@ -55,29 +54,9 @@ export class PatientController {
           patient: Omit<Patient, 'id'>,
   ): Promise<Patient | null> {
 
-    let returnValue: Promise<Patient | null> = new Promise(resolve => {
+    let completePatient: Patient = JSON.parse(JSON.stringify(patient));
 
-      //generate an unique uuid for each patient
-      patient.serviceAdvertisementUUID = BluetoothUuidGenerator.generateUUID();
-      patient.status = PatientStatus.UNKNOWN; //initial status
-      patient.created = new Date();
-
-      this.userValidatorService.validateUser(<Patient>patient).then(validationResult => {
-        if(validationResult.isValid) {
-          this.patientRepository.create(patient).then(createdPatient => {
-            resolve(createdPatient);
-          });
-        }
-        else {
-          let error = new HttpErrors[401]; //unauthorized
-          error.message = validationResult.message;
-          throw error;
-        }
-      });
-
-    });
-
-    return returnValue;
+    return this.patientService.signUpPatient(completePatient);
 
   }
 
@@ -155,8 +134,8 @@ export class PatientController {
     },
   })
   //todo securize
-  /*@authenticate(process.env.AUTH_STRATEGY!)
-  @authorize({ resource: 'Patient', scopes: ['read'] })*/
+  @authenticate(process.env.AUTH_STRATEGY!)
+  @authorize({ resource: 'Patient', scopes: ['read'] })
   async getByQrCode(
       @param.path.string('qrcode') qrcode: string,
   ): Promise<Patient> {
@@ -244,7 +223,7 @@ export class PatientController {
 
   }
 
-  @put('/patients/status', {
+  @put('/patients/status/change', {
     responses: {
       '200': {
         description: 'Update patient status success',
@@ -263,23 +242,25 @@ export class PatientController {
               type: 'object',
               additionalProperties: false,
               properties: {
-                documentNumber: { type: 'string' },
+                documentNumber: { type: 'string', nullable: true },
+                healthInsuranceCardNumber: { type: 'string', nullable: true },
                 status: { type: 'number' },
                 date: { type: 'string' }
               },
-              required: ['documentNumber', 'status']
+              required: ['status']
             }
           }
         },
       }) body: any,
   ): Promise<Patient | null> {
 
-    if(apiKey != "test") {
+    if(apiKey != process.env.API_KEY) {
       console.log("Wrong API key used: " + apiKey);
       throw new HttpErrors[401]; //unauthorized
     }
 
-    return this.patientService.changeStatus(body.documentNumber, body.status);
+    //identifier can be document number of health card number
+    return this.patientService.changeStatus(body.documentNumber, body.healthInsuranceCardNumber, body.status, body.date);
 
   }
 

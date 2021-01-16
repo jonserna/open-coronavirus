@@ -5,9 +5,10 @@ import {Diagnostic} from '@ionic-native/diagnostic/ngx';
 import {BluetoothLE} from "@ionic-native/bluetooth-le/ngx";
 import {Push} from "@ionic-native/push/ngx";
 import {PermissionType, Plugins} from "@capacitor/core";
-import {BLE} from "@ionic-native/ble/ngx";
 import {AndroidPermissions} from "@ionic-native/android-permissions/ngx";
 import {ContactTrackerService} from "./contacts/contact-tracker.service";
+import {TracingService} from "./tracing.service";
+import {BehaviorSubject, Subject} from "rxjs";
 
 const { PushNotifications, Permissions } = Plugins;
 
@@ -16,6 +17,9 @@ export class PermissionsService {
 
     public permissionsRequested = false;
     public requiredPermissions: Array<string>;
+    public bluetoothPoweredOn = false;
+    public bluetoothPoweredOn$ = new BehaviorSubject<boolean|null>(null);
+    public registeredBluetoothStateChange = false;
 
     constructor(
         @Inject('settings') protected settings,
@@ -23,13 +27,59 @@ export class PermissionsService {
         protected push: Push,
         protected diagnostic: Diagnostic,
         protected platform: Platform,
+        protected tracingService: TracingService,
         protected androidPermissions: AndroidPermissions,
         protected bluetoothLe: BluetoothLE,
-        protected ble: BLE,
         protected navCtrl: NavController,
         protected contactTrackerService: ContactTrackerService
     ) {
         this.requiredPermissions = [];
+    }
+
+    registerBluetoothStateChange() {
+
+        let returnValue: Promise<boolean> = new Promise(resolve => {
+            if (!this.registeredBluetoothStateChange) {
+                this.registeredBluetoothStateChange = true;
+                if (this.platform.is('android')) {
+                    this.platform.resume.subscribe(() => {
+                        this.diagnostic.getBluetoothState().then(result => {
+                            if(result != null) {
+                                this.setBluetoothState(result);
+                            }
+                        });
+                    });
+                    this.diagnostic.getBluetoothState().then(result => {
+                        if(result != null) {
+                            resolve(this.setBluetoothState(result));
+                        }
+                    });
+                } else {
+                    this.diagnostic.registerBluetoothStateChangeHandler(stateChange => {
+                        if (stateChange != null) {
+                            resolve(this.setBluetoothState(stateChange));
+                        }
+                        console.log("[PermissionService] Bluetooth state change: " + JSON.stringify(stateChange));
+                    });
+                }
+            }
+        });
+
+        return returnValue;
+    }
+
+    protected setBluetoothState(newState) {
+        let returnValue;
+        if (newState == this.diagnostic.bluetoothState.POWERED_ON) {
+            this.bluetoothPoweredOn = true;
+            this.bluetoothPoweredOn$.next(true);
+            returnValue = true;
+        } else {
+            this.bluetoothPoweredOn = false;
+            this.bluetoothPoweredOn$.next(false);
+            returnValue = false;
+        }
+        return returnValue;
     }
 
     async requestFirstPermission() {
@@ -77,7 +127,7 @@ export class PermissionsService {
             switch (permission) {
                 case 'bluetooth':
                     this.hasBluetoothPermission().then(result => {
-                       resolve(result);
+                        resolve(result);
                     });
                     break;
                 case 'push':
@@ -140,7 +190,11 @@ export class PermissionsService {
             if(this.platform.is('android')) {
                 this.bluetoothLe.hasPermission().then(result => {
                     console.log('[PermissionService] has bluetooth permission: ' + JSON.stringify(result));
-                    resolve(true);
+                    if (result.hasPermission) {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
                 })
                     .catch(error => {
                         console.error('[PermissionService] has bluetooth permission: ' + JSON.stringify(error));
@@ -148,7 +202,7 @@ export class PermissionsService {
                     });
             }
             else if(this.platform.is('ios')) {
-                resolve(false);
+                resolve(this.bluetoothPoweredOn);
             }
         });
 
@@ -157,14 +211,22 @@ export class PermissionsService {
 
     hasPushPermission() {
         let returnValue: Promise<boolean> = new Promise(resolve => {
-            Permissions.query({name: PermissionType.Notifications}).then(result => {
-                console.log('[PermissionService] has push permission: ' + JSON.stringify(result));
-                if (result.state == 'granted') {
-                    resolve(true);
-                } else {
-                    resolve(false);
-                }
-            });
+            if(this.platform.is('android')) {
+                this.diagnostic.isRemoteNotificationsEnabled().then(result => {
+                    console.log("[PermissionService] has push permission: " + JSON.stringify(result));
+                    resolve(result);
+                })
+            }
+            else {
+                Permissions.query({name: PermissionType.Notifications}).then(result => {
+                    console.log('[PermissionService] has push permission: ' + JSON.stringify(result));
+                    if (result.state == 'granted') {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                });
+            }
         });
 
         return returnValue;
@@ -215,29 +277,22 @@ export class PermissionsService {
                     console.log('[PermissionService] bluetooth has been enabled: ' + JSON.stringify(result));
                     resolve(true);
                 })
-                .catch(error => {
-                    console.error('[PermissionService] error trying to enable bluetooth: ' + JSON.stringify(error));
-                    resolve(false);
-                });
+                    .catch(error => {
+                        console.error('[PermissionService] error trying to enable bluetooth: ' + JSON.stringify(error));
+                        resolve(false);
+                    });
             }
             else if(this.platform.is('ios')) {
                 this.diagnostic.requestBluetoothAuthorization().then(result => {
-                    console.log("[PermissionService] request bluetooth result: " + JSON.stringify(result));
-                    this.diagnostic.registerBluetoothStateChangeHandler(state => {
-                        if(state === this.diagnostic.bluetoothState.POWERED_ON){
-                            console.log('[PermissionService] bluetooth has been enabled: ' + JSON.stringify(state));
-                            console.log("Bluetooth is able to connect");
-                            resolve(true);
-                        }
-                        else {
-                            console.error('[PermissionService] bluetooth has noty been enabled: ' + JSON.stringify(state));
-                        }
-                    });
+                    this.registerBluetoothStateChange().then(result => {
+                        resolve(result);
+                        console.log("[PermissionService] request bluetooth result: " + JSON.stringify(result));
+                    })
                 })
-                .catch(error => {
-                    console.error('[PermissionService] error trying to enable bluetooth: ' + JSON.stringify(error));
-                    resolve(false);
-                });
+                    .catch(error => {
+                        console.error('[PermissionService] error trying to enable bluetooth: ' + JSON.stringify(error));
+                        resolve(false);
+                    });
             }
 
         });
@@ -275,10 +330,10 @@ export class PermissionsService {
                     console.log("[PermissionService] coarse location permission request result: " + JSON.stringify(result));
                     resolve(true);
                 })
-                .catch(error => {
-                    console.error("[PermissionService] Error trying to request coarse location permission: " + JSON.stringify(error));
-                    resolve(false);
-                });
+                    .catch(error => {
+                        console.error("[PermissionService] Error trying to request coarse location permission: " + JSON.stringify(error));
+                        resolve(false);
+                    });
             }
             else {
                 resolve(true);
@@ -291,7 +346,7 @@ export class PermissionsService {
 
     public requestAutosharePermission() {
         const returnValue = new Promise<boolean>(resolve => {
-            this.contactTrackerService.activateAutoShare();
+            this.tracingService.activateAutoShare();
             resolve(true);
         });
 
